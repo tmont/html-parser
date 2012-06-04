@@ -1,0 +1,25 @@
+{
+    "name": "html-parser",
+    "version": "0.1.0",
+    "description": "HTML/XML parser with less explosions",
+    "author": {
+	    "name": "Tommy Montgomery",
+	    "email": "tmont@tmont.com",
+	    "url": "http://tmont.com/"
+    },
+
+	"main": "./src/parser.js",
+	"directories": {
+		"lib": "./src"
+	},
+
+    "repository": { "type": "git", "url": "git://github.com/tmont/html-parser.git" },
+    "devDependencies": {
+        "mocha": ">= 1.1.0",
+	    "should": ">= 0.6.3"
+    },
+
+	"scripts": {
+		"test": "./test.sh"
+	}
+}
