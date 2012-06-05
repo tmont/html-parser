@@ -118,7 +118,7 @@ describe('attributes', function() {
 
 			attribute: function(name, value, context) {
 				name.should.equal(attrCount === 0 ? 'width' : 'height');
-				value.should.equal(attrCount === 0 ? "0" : "12");
+				value.should.equal(attrCount === 0 ? '0' : '12');
 				helpers.verifyContext(1, (attrCount === 0 ? 6 : 13), context);
 				attrCount++;
 			}
@@ -126,5 +126,47 @@ describe('attributes', function() {
 
 		openCount.should.equal(1);
 		attrCount.should.equal(2);
+	});
+
+	it('with value and funky whitespace', function() {
+		var openCount = 0, attrCount = 0;
+		helpers.parseString('<foo bar = "baz" >', {
+			openElement: function(name, context) {
+				name.should.equal('foo');
+				helpers.verifyContext(1, 2, context);
+				openCount++;
+			},
+
+			attribute: function(name, value, context) {
+				name.should.equal('bar');
+				value.should.equal('baz');
+				helpers.verifyContext(1, 6, context);
+				attrCount++;
+			}
+		});
+
+		openCount.should.equal(1);
+		attrCount.should.equal(1);
+	});
+
+	it('with value on different lines', function() {
+		var openCount = 0, attrCount = 0;
+		helpers.parseString('<foo bar \n=\n "baz" >', {
+			openElement: function(name, context) {
+				name.should.equal('foo');
+				helpers.verifyContext(1, 2, context);
+				openCount++;
+			},
+
+			attribute: function(name, value, context) {
+				name.should.equal('bar');
+				value.should.equal('baz');
+				helpers.verifyContext(1, 6, context);
+				attrCount++;
+			}
+		});
+
+		openCount.should.equal(1);
+		attrCount.should.equal(1);
 	});
 });
