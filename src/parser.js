@@ -1,5 +1,5 @@
 var parseContext = require('./context');
-var nameRegex = /[a-zA-Z_][\w-]*/;
+var nameRegex = /[a-zA-Z_][\w:-]*/;
 
 function readAttribute(context) {
 	var name = context.readRegex(nameRegex);
