@@ -87,7 +87,8 @@ function parseNext(context) {
 					callbackText(context);
 					parseEndElement(context);
 				} else {
-					//malformed html, let it slide through
+					//malformed html
+					context.read();
 					appendText(buffer, context);
 				}
 			}
@@ -100,7 +101,8 @@ function parseNext(context) {
 					parseComment(context);
 				} else {
 					//malformed html
-					appendText(buffer + '!', context);
+					context.read();
+					appendText(buffer, context);
 				}
 			}
 			else if (nameRegex.test(context.current)) {
@@ -108,7 +110,7 @@ function parseNext(context) {
 				parseOpenElement(context);
 			}
 			else {
-				//malformed html, let it slide through
+				//malformed html
 				context.read();
 				appendText(buffer, context);
 			}
