@@ -1,4 +1,4 @@
-var should = require('should');
+require('should');
 var helpers = require('./helpers');
 
 describe('CDATA', function() {

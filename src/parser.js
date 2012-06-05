@@ -177,7 +177,6 @@ function parseEndElement(context) {
 }
 
 function parseCData(context) {
-	//read until ]]>
 	var cbContext = createCallbackContext(context);
 
 	//we already read the "<"
@@ -193,7 +192,18 @@ function parseCData(context) {
 }
 
 function parseComment(context) {
+	var cbContext = createCallbackContext(context);
 
+	//we already read the "<"
+	cbContext.column--;
+
+	//read "!--"
+	context.read(3);
+
+	var match = /^([\s\S]*?)(?:$|-->)/.exec(context.substring);
+	var value = match[1];
+	context.read(value.length + match[0].length);
+	context.callbacks.comment(value, cbContext);
 }
 
 function appendText(value, context) {
@@ -230,8 +240,10 @@ function parseNext(context) {
 			}
 			else if (context.current === '!') {
 				if (/^!\[CDATA\[/.test(context.substring)) {
+					callbackText(context);
 					parseCData(context);
 				} else if (/^!--/.test(context.substring)) {
+					callbackText(context);
 					parseComment(context);
 				} else {
 					//malformed html
