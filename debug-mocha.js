@@ -10,12 +10,13 @@ var mocha = new Mocha({
 
 var testDir = './tests/';
 
-fs.readdir(testDir, function (err, files) {
+fs.readdir(testDir, function(err, files) {
 	if (err) {
 		console.log(err);
 		return;
 	}
 	files.forEach(function (file) {
+//		if (/text-tests.js$/.test(file)) {
 		if (path.extname(file) === '.js') {
 			console.log('adding test file: %s', file);
 			mocha.addFile(testDir + file);

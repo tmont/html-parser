@@ -2,7 +2,11 @@ function createParseContext(raw, options) {
 	var index = 0, line = 1, column = 1;
 	var nextReadIncrementsLine = false;
 	var context = {
-		text: '',
+		text: {
+			value: '',
+			line: 0,
+			column: 0
+		},
 		peek: function(count) {
 			count = count || 1;
 			return this.raw.substr(index + 1, count);
@@ -156,6 +160,9 @@ function parseOpenElement(context) {
 			next = context.read();
 		}
 	}
+
+	//the last ">"
+	context.read();
 }
 
 function parseEndElement(context) {
@@ -169,6 +176,23 @@ function parseEndElement(context) {
 	context.readRegex(/.*?(?:>|$)/);
 }
 
+function appendText(value, context) {
+	if (!context.text.value) {
+		context.text.line = context.line;
+		context.text.column = context.column;
+	}
+	context.text.value += value;
+}
+
+function callbackText(context) {
+	if (context.text.value) {
+		context.callbacks.text(context.text.value, createCallbackContext(context.text));
+		context.text.value = '';
+		context.text.line = 0;
+		context.text.column = 0;
+	}
+}
+
 function parseNext(context) {
 	var current = context.current, buffer = current;
 	switch (current) {
@@ -177,24 +201,26 @@ function parseNext(context) {
 			if (context.current === '/') {
 				buffer += context.readUntilNonWhitespace();
 				if (regexes.elementName.test(context.current)) {
+					callbackText(context);
 					parseEndElement(context);
 				}
 				else {
 					//malformed html, let it slide through
-					context.text += buffer;
+					appendText(buffer);
 				}
 			}
 			else if (regexes.elementName.test(context.current)) {
+				callbackText(context);
 				parseOpenElement(context);
 			}
 			else {
 				//malformed html, let it slide through
-				context.text += buffer;
+				appendText(buffer);
 			}
 
 			break;
 		default:
-			context.text += current;
+			appendText(context.current, context);
 			context.read();
 			break;
 	}
@@ -205,4 +231,6 @@ exports.parse = function(string, options) {
 	do {
 		parseNext(context);
 	} while (!context.isEof());
+
+	callbackText(context);
 };

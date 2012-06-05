@@ -13,5 +13,4 @@ else
 fi
 
 CMD="$CMD ./tests/*"
-echo $CMD
 $CMD
