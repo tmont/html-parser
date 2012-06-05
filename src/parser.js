@@ -1,33 +1,36 @@
 var parseContext = require('./context');
 var nameRegex = /[a-zA-Z_][\w-]*/;
 
-function parseOpenElement(context) {
-	function readAttribute() {
-		var name = context.readRegex(nameRegex);
-		var value = null;
-		if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
-			context.readRegex(/\s*=\s*/);
-			var quote = /['"]/.test(context.current) ? context.current : '';
-			var attributeValueRegex = !quote
-				? /(.*?)[\s>]/
-				: new RegExp(quote + '(.*?)' + quote) ;
+function readAttribute(context) {
+	var name = context.readRegex(nameRegex);
+	var value = null;
+	if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
+		context.readRegex(/\s*=\s*/);
+		var quote = /['"]/.test(context.current) ? context.current : '';
+		var attributeValueRegex = !quote
+			? /(.*?)[\s>]/
+			: new RegExp(quote + '(.*?)' + quote);
 
-			var match = attributeValueRegex.exec(context.substring) || [0, ''];
-			value = match[1];
-			context.read(match[0].length);
-		}
-
-		context.callbacks.attribute(name, value);
+		var match = attributeValueRegex.exec(context.substring) || [0, ''];
+		value = match[1];
+		context.read(match[0].length);
 	}
 
-	var name = context.readRegex(nameRegex);
-	context.callbacks.openElement(name);
+	context.callbacks.attribute(name, value);
+}
 
-	//read attributes
+function readAttributes(context, isXml) {
+	function isClosingToken() {
+		if (isXml) {
+			return context.current === '?' && context.peek() === '>';
+		}
+
+		return context.current === '>';
+	}
 	var next = context.current;
-	while (!context.isEof() && next !== '>') {
+	while (!context.isEof() && !isClosingToken()) {
 		if (nameRegex.test(next)) {
-			readAttribute();
+			readAttribute(context);
 			next = context.current;
 		}
 		else {
@@ -36,7 +39,13 @@ function parseOpenElement(context) {
 	}
 
 	//the last ">"
-	context.read();
+	context.read(isXml ? 2 : 1);
+}
+
+function parseOpenElement(context) {
+	var name = context.readRegex(nameRegex);
+	context.callbacks.openElement(name);
+	readAttributes(context, false);
 }
 
 function parseEndElement(context) {
@@ -73,6 +82,13 @@ function parseDocType(context) {
 	var value = match[1];
 	context.read(match[0].length);
 	context.callbacks.docType(value);
+}
+
+function parseXmlProlog(context) {
+	//read "?xml "
+	context.read(5);
+	context.callbacks.xmlProlog();
+	readAttributes(context, true);
 }
 
 function appendText(value, context) {
@@ -112,6 +128,15 @@ function parseNext(context) {
 				parseDocType(context);
 			} else {
 				//malformed html
+				context.read();
+				appendText(buffer, context);
+			}
+		} else if (context.current === '?') {
+			if (/^\?xml/.test(context.substring)) {
+				callbackText(context);
+				parseXmlProlog(context);
+			} else {
+				//malformed xml prolog
 				context.read();
 				appendText(buffer, context);
 			}
