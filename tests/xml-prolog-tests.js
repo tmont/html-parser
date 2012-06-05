@@ -61,7 +61,7 @@ describe('XML Prologs', function() {
 				openCount++;
 			},
 			closeElement: function(name) {
-				name.should.equal(closeCount === 0 ? '' : 'foo');
+				name.should.equal('foo');
 				closeCount++;
 			},
 			attribute: function(name, value) {
@@ -75,6 +75,6 @@ describe('XML Prologs', function() {
 
 		prologCount.should.equal(1);
 		openCount.should.equal(1);
-		closeCount.should.equal(2);
+		closeCount.should.equal(1);
 	});
 });

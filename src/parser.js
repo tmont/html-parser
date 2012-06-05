@@ -41,14 +41,16 @@ function readAttributes(context, isXml) {
 	if (context.current === '/') {
 		//self closing tag "/>"
 		context.readUntilNonWhitespace();
-		context.callbacks.closeElement('');
+		context.read();
+		context.callbacks.closeOpenedElement('/>');
 	} else if (isXml) {
 		//xml closing "?>"
 		context.read(2);
-		context.callbacks.closeElement('');
+		context.callbacks.closeOpenedElement('?>');
 	} else {
 		//normal closing ">"
 		context.read();
+		context.callbacks.closeOpenedElement('>');
 	}
 }
 

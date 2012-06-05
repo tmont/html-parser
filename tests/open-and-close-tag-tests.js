@@ -135,15 +135,15 @@ describe('opening and closing tags', function() {
 		textCount.should.equal(1);
 	});
 
-	it('self closing tag should emit closeElement', function() {
+	it('self closing tag should emit closeOpenedElement', function() {
 		var closeCount = 0, openCount = 0;
 		helpers.parseString('<foo />', {
 			openElement: function(name) {
 				name.should.equal('foo');
 				openCount++;
 			},
-			closeElement: function(name) {
-				name.should.equal('');
+			closeOpenedElement: function(name) {
+				name.should.equal('/>');
 				closeCount++;
 			}
 		});

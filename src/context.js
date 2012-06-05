@@ -72,7 +72,8 @@ exports.create = function(raw, options) {
 	});
 
 	context.callbacks = {};
-	[ 'openElement', 'closeElement', 'attribute', 'comment', 'cdata', 'text', 'docType', 'xmlProlog', ].forEach(function(value) {
+	var types = [ 'openElement', 'closeElement', 'attribute', 'comment', 'cdata', 'text', 'docType', 'xmlProlog', 'closeOpenedElement' ];
+	types.forEach(function(value) {
 		context.callbacks[value] = options[value] || function() {
 		};
 	});
