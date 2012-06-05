@@ -28,7 +28,7 @@ describe('CDATA', function() {
 		cdataCount.should.equal(1);
 	});
 
-	it('does not parse text', function() {
+	it('does not parse as text', function() {
 		var cdataCount = 0, textCount = 0;
 		helpers.parseString('<![CDATA[ foo ]]>', {
 			cdata: function(value, context) {
@@ -70,5 +70,26 @@ describe('CDATA', function() {
 		});
 
 		cdataCount.should.equal(1);
+	});
+
+	it('outputs buffered text node before cdata', function() {
+		var cdataCount = 0, textCount = 0;
+		helpers.parseString('foo<![CDATA[bar]]>', {
+			cdata: function(value, context) {
+				textCount.should.equal(1);
+				value.should.equal('bar');
+				helpers.verifyContext(1, 4, context);
+				cdataCount++;
+			},
+
+			text: function(value, context) {
+				value.should.equal('foo');
+				helpers.verifyContext(1, 1, context);
+				textCount++;
+			}
+		});
+
+		cdataCount.should.equal(1);
+		textCount.should.equal(1);
 	});
 });

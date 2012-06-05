@@ -71,4 +71,44 @@ describe('opening and closing tags', function() {
 		openCount.should.equal(1);
 		closeCount.should.equal(1);
 	});
+
+	it('outputs buffered text node before open element', function() {
+		var openCount = 0, textCount = 0;
+		helpers.parseString('foo<bar>', {
+			openElement: function(name, context) {
+				textCount.should.equal(1);
+				name.should.equal('bar');
+				helpers.verifyContext(1, 5, context);
+				openCount++;
+			},
+			text: function(name, context) {
+				name.should.equal('foo');
+				helpers.verifyContext(1, 1, context);
+				textCount++;
+			}
+		});
+
+		openCount.should.equal(1);
+		textCount.should.equal(1);
+	});
+
+	it('outputs buffered text node before close element', function() {
+		var closeCount = 0, textCount = 0;
+		helpers.parseString('foo</bar>', {
+			closeElement: function(name, context) {
+				textCount.should.equal(1);
+				name.should.equal('bar');
+				helpers.verifyContext(1, 6, context);
+				closeCount++;
+			},
+			text: function(name, context) {
+				name.should.equal('foo');
+				helpers.verifyContext(1, 1, context);
+				textCount++;
+			}
+		});
+
+		closeCount.should.equal(1);
+		textCount.should.equal(1);
+	});
 });

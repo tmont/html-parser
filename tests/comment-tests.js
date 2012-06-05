@@ -11,6 +11,8 @@ describe('Comments', function() {
 				commentCount++;
 			}
 		});
+
+		commentCount.should.equal(1);
 	});
 
 	it('spanning multiple lines', function() {
@@ -22,6 +24,8 @@ describe('Comments', function() {
 				commentCount++;
 			}
 		});
+
+		commentCount.should.equal(1);
 	});
 
 	it('allow tags and entities', function() {
@@ -33,6 +37,8 @@ describe('Comments', function() {
 				commentCount++;
 			}
 		});
+
+		commentCount.should.equal(1);
 	});
 
 	it('read to EOF if --> is not given', function() {
@@ -44,5 +50,27 @@ describe('Comments', function() {
 				commentCount++;
 			}
 		});
+
+		commentCount.should.equal(1);
+	});
+
+	it('outputs buffered text node before comment', function() {
+		var commentCount = 0, textCount = 0;
+		helpers.parseString('foo<!-- bar -->', {
+			text: function(value, context) {
+				value.should.equal('foo');
+				helpers.verifyContext(1, 1, context);
+				textCount++;
+			},
+			comment: function(value, context) {
+				textCount.should.equal(1);
+				value.should.equal(' bar ');
+				helpers.verifyContext(1, 4, context);
+				commentCount++;
+			}
+		});
+
+		commentCount.should.equal(1);
+		textCount.should.equal(1);
 	});
 });
