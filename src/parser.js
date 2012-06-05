@@ -1,10 +1,5 @@
-var State = {
-	text: 0,
-	insideElement: 1
-};
-
 function createParseContext(raw, options) {
-	var index = 0, state = State.text, line = 1, column = 1;
+	var index = 0, line = 1, column = 1;
 	var nextReadIncrementsLine = false;
 	var context = {
 		text: '',
@@ -13,6 +8,9 @@ function createParseContext(raw, options) {
 			return this.raw.substr(index + 1, count);
 		},
 		read: function(count) {
+			if (count === 0) {
+				return '';
+			}
 			count = count || 1;
 			if (nextReadIncrementsLine) {
 				line++;
@@ -23,9 +21,10 @@ function createParseContext(raw, options) {
 			var next = this.peek(count);
 			if (next) {
 				column++;
-			}
-			if (next === '\n') {
-				nextReadIncrementsLine = true;
+
+				if (next === '\n') {
+					nextReadIncrementsLine = true;
+				}
 			}
 
 			index += count;
@@ -47,9 +46,15 @@ function createParseContext(raw, options) {
 			return index >= this.length;
 		},
 		readRegex: function(regex) {
-			var value = regex.exec(this.raw.substring(this.index))[0];
-			line += value.replace(/[^\n]/g, '').length;
-			column = value.substring(value.lastIndexOf('\n')).length;
+			var value = (regex.exec(this.raw.substring(this.index)) || [''])[0];
+			var lineBreaks = value.replace(/[^\n]/g, '').length;
+			line += lineBreaks;
+			if (lineBreaks) {
+				column = value.substring(Math.max(value.lastIndexOf('\n'), 0)).length;
+			} else {
+				column += value.length;
+			}
+
 			index += value.length;
 			return value;
 		},
@@ -67,16 +72,9 @@ function createParseContext(raw, options) {
 			} while (value.length < count);
 
 			return value;
-		},
-
-		setState: function(newState) {
-			state = newState;
 		}
 	};
 
-	context.__defineGetter__('state', function() {
-		return state;
-	});
 	context.__defineGetter__('current', function() {
 		return this.isEof() ? '' :  this.raw.charAt(this.index);
 	});
@@ -95,6 +93,9 @@ function createParseContext(raw, options) {
 	context.__defineGetter__('column', function() {
 		return column;
 	});
+	context.__defineGetter__('substring', function() {
+		return this.raw.substring(this.index);
+	});
 
 	context.callbacks = {};
 	[ 'openElement', 'closeElement', 'attribute', 'comment', 'cdata', 'entity', 'text' ].forEach(function(value) {
@@ -110,9 +111,31 @@ var regexes = {
 
 regexes.attributeName = regexes.elementName;
 
+function createCallbackContext(context) {
+	return {
+		line: context.line,
+		column: context.column
+	};
+}
+
 function parseOpenElement(context) {
 	function readAttribute() {
+		var cbContext = createCallbackContext(context);
+		var name = context.readRegex(regexes.attributeName);
+		var value = null;
+		if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
+			context.readRegex(/\s*=\s*/);
+			var quote = /['"]/.test(context.current) ? context.current : '';
+			var attributeRegex = !quote
+				? /(.*?)[\s>]/
+				: new RegExp(quote + '(.*?)' + quote) ;
 
+			var match = attributeRegex.exec(context.substring) || [0, ''];
+			value = match[1];
+			context.read(match[0].length);
+		}
+
+		context.callbacks.attribute(name, value, cbContext);
 	}
 
 	var line = context.line, column = context.column;
@@ -124,9 +147,10 @@ function parseOpenElement(context) {
 
 	//read attributes
 	var next = context.current;
-	while (next !== '>') {
+	while (!context.isEof() && next !== '>') {
 		if (regexes.attributeName.test(next)) {
 			readAttribute();
+			next = context.current;
 		}
 		else {
 			next = context.read();
