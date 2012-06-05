@@ -51,7 +51,7 @@ function parseCData(context) {
 
 	var match = /^([\s\S]*?)(?:$|]]>)/.exec(context.substring);
 	var value = match[1];
-	context.read(value.length + match[0].length);
+	context.read(match[0].length);
 	context.callbacks.cdata(value);
 }
 
@@ -61,8 +61,18 @@ function parseComment(context) {
 
 	var match = /^([\s\S]*?)(?:$|-->)/.exec(context.substring);
 	var value = match[1];
-	context.read(value.length + match[0].length);
+	context.read(match[0].length);
 	context.callbacks.comment(value);
+}
+
+function parseDocType(context) {
+	//read "!doctype"
+	context.read(8);
+
+	var match = /^\s*([\s\S]*?)(?:$|>)/.exec(context.substring);
+	var value = match[1];
+	context.read(match[0].length);
+	context.callbacks.docType(value);
 }
 
 function appendText(value, context) {
@@ -97,6 +107,9 @@ function parseNext(context) {
 			} else if (/^!--/.test(context.substring)) {
 				callbackText(context);
 				parseComment(context);
+			} else if (/^!doctype/i.test(context.substring)) {
+				callbackText(context);
+				parseDocType(context);
 			} else {
 				//malformed html
 				context.read();
