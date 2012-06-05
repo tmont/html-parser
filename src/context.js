@@ -1,9 +1,7 @@
 exports.create = function(raw, options) {
 	var index = 0;
 	var context = {
-		text: {
-			value: ''
-		},
+		text: '',
 		peek: function(count) {
 			count = count || 1;
 			return this.raw.substr(index + 1, count);

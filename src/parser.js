@@ -1,20 +1,18 @@
 var parseContext = require('./context');
-
-var elementNameRegex = /[a-zA-Z_][\w-]*/;
-var attributeNameRegex = elementNameRegex;
+var nameRegex = /[a-zA-Z_][\w-]*/;
 
 function parseOpenElement(context) {
 	function readAttribute() {
-		var name = context.readRegex(attributeNameRegex);
+		var name = context.readRegex(nameRegex);
 		var value = null;
 		if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
 			context.readRegex(/\s*=\s*/);
 			var quote = /['"]/.test(context.current) ? context.current : '';
-			var attributeRegex = !quote
+			var attributeValueRegex = !quote
 				? /(.*?)[\s>]/
 				: new RegExp(quote + '(.*?)' + quote) ;
 
-			var match = attributeRegex.exec(context.substring) || [0, ''];
+			var match = attributeValueRegex.exec(context.substring) || [0, ''];
 			value = match[1];
 			context.read(match[0].length);
 		}
@@ -22,13 +20,13 @@ function parseOpenElement(context) {
 		context.callbacks.attribute(name, value);
 	}
 
-	var name = context.readRegex(elementNameRegex);
+	var name = context.readRegex(nameRegex);
 	context.callbacks.openElement(name);
 
 	//read attributes
 	var next = context.current;
 	while (!context.isEof() && next !== '>') {
-		if (attributeNameRegex.test(next)) {
+		if (nameRegex.test(next)) {
 			readAttribute();
 			next = context.current;
 		}
@@ -42,7 +40,7 @@ function parseOpenElement(context) {
 }
 
 function parseEndElement(context) {
-	var name = context.readRegex(elementNameRegex);
+	var name = context.readRegex(nameRegex);
 	context.callbacks.closeElement(name);
 	context.readRegex(/.*?(?:>|$)/);
 }
@@ -68,13 +66,13 @@ function parseComment(context) {
 }
 
 function appendText(value, context) {
-	context.text.value += value;
+	context.text += value;
 }
 
 function callbackText(context) {
-	if (context.text.value) {
-		context.callbacks.text(context.text.value);
-		context.text.value = '';
+	if (context.text) {
+		context.callbacks.text(context.text);
+		context.text = '';
 	}
 }
 
@@ -85,7 +83,7 @@ function parseNext(context) {
 			buffer += context.readUntilNonWhitespace();
 			if (context.current === '/') {
 				buffer += context.readUntilNonWhitespace();
-				if (elementNameRegex.test(context.current)) {
+				if (nameRegex.test(context.current)) {
 					callbackText(context);
 					parseEndElement(context);
 				} else {
@@ -105,7 +103,7 @@ function parseNext(context) {
 					appendText(buffer + '!', context);
 				}
 			}
-			else if (elementNameRegex.test(context.current)) {
+			else if (nameRegex.test(context.current)) {
 				callbackText(context);
 				parseOpenElement(context);
 			}
