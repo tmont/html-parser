@@ -134,4 +134,21 @@ describe('opening and closing tags', function() {
 		closeCount.should.equal(1);
 		textCount.should.equal(1);
 	});
+
+	it('self closing tag should emit closeElement', function() {
+		var closeCount = 0, openCount = 0;
+		helpers.parseString('<foo />', {
+			openElement: function(name) {
+				name.should.equal('foo');
+				openCount++;
+			},
+			closeElement: function(name) {
+				name.should.equal('');
+				closeCount++;
+			}
+		});
+
+		closeCount.should.equal(1);
+		openCount.should.equal(1);
+	});
 });

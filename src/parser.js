@@ -25,7 +25,7 @@ function readAttributes(context, isXml) {
 			return context.current === '?' && context.peek() === '>';
 		}
 
-		return context.current === '>';
+		return context.current === '>' || (context.current === '/' && context.peekIgnoreWhitespace() === '>');
 	}
 	var next = context.current;
 	while (!context.isEof() && !isClosingToken()) {
@@ -38,8 +38,18 @@ function readAttributes(context, isXml) {
 		}
 	}
 
-	//the last ">"
-	context.read(isXml ? 2 : 1);
+	if (context.current === '/') {
+		//self closing tag "/>"
+		context.readUntilNonWhitespace();
+		context.callbacks.closeElement('');
+	} else if (isXml) {
+		//xml closing "?>"
+		context.read(2);
+		context.callbacks.closeElement('');
+	} else {
+		//normal closing ">"
+		context.read();
+	}
 }
 
 function parseOpenElement(context) {
@@ -161,4 +171,17 @@ exports.parse = function(string, options) {
 	} while (!context.isEof());
 
 	callbackText(context);
+};
+
+exports.parseFile = function(fileName, encoding, options, callback) {
+	var fs = require('fs');
+	fs.readFile(fileName, encoding || 'utf8', function(err, contents) {
+		if (err) {
+			callback && callback(err);
+			return;
+		}
+
+		exports.parse(contents, options);
+		callback && callback();
+	});
 };
