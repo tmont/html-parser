@@ -102,7 +102,7 @@ function createParseContext(raw, options) {
 	});
 
 	context.callbacks = {};
-	[ 'openElement', 'closeElement', 'attribute', 'comment', 'cdata', 'entity', 'text' ].forEach(function(value) {
+	[ 'openElement', 'closeElement', 'attribute', 'comment', 'cdata', 'text' ].forEach(function(value) {
 		context.callbacks[value] = options[value] || function() {};
 	});
 
@@ -176,6 +176,26 @@ function parseEndElement(context) {
 	context.readRegex(/.*?(?:>|$)/);
 }
 
+function parseCData(context) {
+	//read until ]]>
+	var cbContext = createCallbackContext(context);
+
+	//we already read the "<"
+	cbContext.column--;
+
+	//read "![CDATA["
+	context.read(8);
+
+	var match = /^([\s\S]*?)(?:$|]]>)/.exec(context.substring);
+	var value = match[1];
+	context.read(value.length + match[0].length);
+	context.callbacks.cdata(value, cbContext);
+}
+
+function parseComment(context) {
+
+}
+
 function appendText(value, context) {
 	if (!context.text.value) {
 		context.text.line = context.line;
@@ -203,10 +223,19 @@ function parseNext(context) {
 				if (regexes.elementName.test(context.current)) {
 					callbackText(context);
 					parseEndElement(context);
-				}
-				else {
+				} else {
 					//malformed html, let it slide through
 					appendText(buffer);
+				}
+			}
+			else if (context.current === '!') {
+				if (/^!\[CDATA\[/.test(context.substring)) {
+					parseCData(context);
+				} else if (/^!--/.test(context.substring)) {
+					parseComment(context);
+				} else {
+					//malformed html
+					appendText(buffer + '!');
 				}
 			}
 			else if (regexes.elementName.test(context.current)) {
