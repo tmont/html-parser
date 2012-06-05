@@ -78,48 +78,41 @@ function callbackText(context) {
 
 function parseNext(context) {
 	var current = context.current, buffer = current;
-	switch (current) {
-		case '<':
+	if (current == '<') {
+		buffer += context.readUntilNonWhitespace();
+		if (context.current === '/') {
 			buffer += context.readUntilNonWhitespace();
-			if (context.current === '/') {
-				buffer += context.readUntilNonWhitespace();
-				if (nameRegex.test(context.current)) {
-					callbackText(context);
-					parseEndElement(context);
-				} else {
-					//malformed html
-					context.read();
-					appendText(buffer, context);
-				}
-			}
-			else if (context.current === '!') {
-				if (/^!\[CDATA\[/.test(context.substring)) {
-					callbackText(context);
-					parseCData(context);
-				} else if (/^!--/.test(context.substring)) {
-					callbackText(context);
-					parseComment(context);
-				} else {
-					//malformed html
-					context.read();
-					appendText(buffer, context);
-				}
-			}
-			else if (nameRegex.test(context.current)) {
+			if (nameRegex.test(context.current)) {
 				callbackText(context);
-				parseOpenElement(context);
-			}
-			else {
+				parseEndElement(context);
+			} else {
 				//malformed html
 				context.read();
 				appendText(buffer, context);
 			}
-
-			break;
-		default:
-			appendText(context.current, context);
+		} else if (context.current === '!') {
+			if (/^!\[CDATA\[/.test(context.substring)) {
+				callbackText(context);
+				parseCData(context);
+			} else if (/^!--/.test(context.substring)) {
+				callbackText(context);
+				parseComment(context);
+			} else {
+				//malformed html
+				context.read();
+				appendText(buffer, context);
+			}
+		} else if (nameRegex.test(context.current)) {
+			callbackText(context);
+			parseOpenElement(context);
+		} else {
+			//malformed html
 			context.read();
-			break;
+			appendText(buffer, context);
+		}
+	} else {
+		appendText(context.current, context);
+		context.read();
 	}
 }
 
