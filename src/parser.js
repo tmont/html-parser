@@ -1,11 +1,8 @@
 function createParseContext(raw, options) {
-	var index = 0, line = 1, column = 1;
-	var nextReadIncrementsLine = false;
+	var index = 0;
 	var context = {
 		text: {
-			value: '',
-			line: 0,
-			column: 0
+			value: ''
 		},
 		peek: function(count) {
 			count = count || 1;
@@ -16,22 +13,11 @@ function createParseContext(raw, options) {
 				return '';
 			}
 			count = count || 1;
-			if (nextReadIncrementsLine) {
-				line++;
-				column = 0;
-				nextReadIncrementsLine = false;
-			}
-
 			var next = this.peek(count);
-			if (next) {
-				column++;
-
-				if (next === '\n') {
-					nextReadIncrementsLine = true;
-				}
-			}
-
 			index += count;
+			if (index > this.length) {
+				index = this.length;
+			}
 			return next;
 		},
 		readUntilNonWhitespace: function() {
@@ -51,14 +37,6 @@ function createParseContext(raw, options) {
 		},
 		readRegex: function(regex) {
 			var value = (regex.exec(this.raw.substring(this.index)) || [''])[0];
-			var lineBreaks = value.replace(/[^\n]/g, '').length;
-			line += lineBreaks;
-			if (lineBreaks) {
-				column = value.substring(Math.max(value.lastIndexOf('\n'), 0)).length;
-			} else {
-				column += value.length;
-			}
-
 			index += value.length;
 			return value;
 		},
@@ -91,12 +69,6 @@ function createParseContext(raw, options) {
 	context.__defineGetter__('index', function() {
 		return index;
 	});
-	context.__defineGetter__('line', function() {
-		return line;
-	});
-	context.__defineGetter__('column', function() {
-		return column;
-	});
 	context.__defineGetter__('substring', function() {
 		return this.raw.substring(this.index);
 	});
@@ -115,16 +87,8 @@ var regexes = {
 
 regexes.attributeName = regexes.elementName;
 
-function createCallbackContext(context) {
-	return {
-		line: context.line,
-		column: context.column
-	};
-}
-
 function parseOpenElement(context) {
 	function readAttribute() {
-		var cbContext = createCallbackContext(context);
 		var name = context.readRegex(regexes.attributeName);
 		var value = null;
 		if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
@@ -139,15 +103,11 @@ function parseOpenElement(context) {
 			context.read(match[0].length);
 		}
 
-		context.callbacks.attribute(name, value, cbContext);
+		context.callbacks.attribute(name, value);
 	}
 
-	var line = context.line, column = context.column;
 	var name = context.readRegex(regexes.elementName);
-	context.callbacks.openElement(name, {
-		line: line,
-		column: column
-	});
+	context.callbacks.openElement(name);
 
 	//read attributes
 	var next = context.current;
@@ -166,60 +126,39 @@ function parseOpenElement(context) {
 }
 
 function parseEndElement(context) {
-	var line = context.line, column = context.column;
 	var name = context.readRegex(regexes.elementName);
-	context.callbacks.closeElement(name, {
-		line: line,
-		column: column
-	});
-
+	context.callbacks.closeElement(name);
 	context.readRegex(/.*?(?:>|$)/);
 }
 
 function parseCData(context) {
-	var cbContext = createCallbackContext(context);
-
-	//we already read the "<"
-	cbContext.column--;
-
 	//read "![CDATA["
 	context.read(8);
 
 	var match = /^([\s\S]*?)(?:$|]]>)/.exec(context.substring);
 	var value = match[1];
 	context.read(value.length + match[0].length);
-	context.callbacks.cdata(value, cbContext);
+	context.callbacks.cdata(value);
 }
 
 function parseComment(context) {
-	var cbContext = createCallbackContext(context);
-
-	//we already read the "<"
-	cbContext.column--;
-
 	//read "!--"
 	context.read(3);
 
 	var match = /^([\s\S]*?)(?:$|-->)/.exec(context.substring);
 	var value = match[1];
 	context.read(value.length + match[0].length);
-	context.callbacks.comment(value, cbContext);
+	context.callbacks.comment(value);
 }
 
 function appendText(value, context) {
-	if (!context.text.value) {
-		context.text.line = context.line;
-		context.text.column = context.column;
-	}
 	context.text.value += value;
 }
 
 function callbackText(context) {
 	if (context.text.value) {
-		context.callbacks.text(context.text.value, createCallbackContext(context.text));
+		context.callbacks.text(context.text.value);
 		context.text.value = '';
-		context.text.line = 0;
-		context.text.column = 0;
 	}
 }
 

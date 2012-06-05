@@ -5,9 +5,8 @@ describe('opening and closing tags', function() {
 	it('element without a closing tag', function() {
 		var count = 0;
 		helpers.parseString('<foo>', {
-			openElement: function(name, context) {
+			openElement: function(name) {
 				name.should.equal('foo');
-				helpers.verifyContext(1, 2, context);
 				count++;
 			}
 		});
@@ -18,14 +17,12 @@ describe('opening and closing tags', function() {
 	it('element with a closing tag', function() {
 		var openCount = 0, closeCount = 0;
 		helpers.parseString('<foo></foo>', {
-			openElement: function(name, context) {
+			openElement: function(name) {
 				name.should.equal('foo');
-				helpers.verifyContext(1, 2, context);
 				openCount++;
 			},
-			closeElement: function(name, context) {
+			closeElement: function(name) {
 				name.should.equal('foo');
-				helpers.verifyContext(1, 8, context);
 				closeCount++;
 			}
 		});
@@ -37,14 +34,12 @@ describe('opening and closing tags', function() {
 	it('tag names can start with _', function() {
 		var openCount = 0, closeCount = 0;
 		helpers.parseString('<_foo></_foo>', {
-			openElement: function(name, context) {
+			openElement: function(name) {
 				name.should.equal('_foo');
-				helpers.verifyContext(1, 2, context);
 				openCount++;
 			},
-			closeElement: function(name, context) {
+			closeElement: function(name) {
 				name.should.equal('_foo');
-				helpers.verifyContext(1, 9, context);
 				closeCount++;
 			}
 		});
@@ -56,14 +51,29 @@ describe('opening and closing tags', function() {
 	it('opening and closing tag mismatch', function() {
 		var openCount = 0, closeCount = 0;
 		helpers.parseString('<foo></bar>', {
-			openElement: function(name, context) {
+			openElement: function(name) {
 				name.should.equal('foo');
-				helpers.verifyContext(1, 2, context);
 				openCount++;
 			},
-			closeElement: function(name, context) {
+			closeElement: function(name) {
 				name.should.equal('bar');
-				helpers.verifyContext(1, 8, context);
+				closeCount++;
+			}
+		});
+
+		openCount.should.equal(1);
+		closeCount.should.equal(1);
+	});
+
+	it('tag names with weird whitespace', function() {
+		var openCount = 0, closeCount = 0;
+		helpers.parseString('<   foo\n></  \n  bar    >', {
+			openElement: function(name) {
+				name.should.equal('foo');
+				openCount++;
+			},
+			closeElement: function(name) {
+				name.should.equal('bar');
 				closeCount++;
 			}
 		});
@@ -75,14 +85,12 @@ describe('opening and closing tags', function() {
 	it('element with a closing tag that doesn\'t end', function() {
 		var openCount = 0, closeCount = 0;
 		helpers.parseString('<foo></foo', {
-			openElement: function(name, context) {
+			openElement: function(name) {
 				name.should.equal('foo');
-				helpers.verifyContext(1, 2, context);
 				openCount++;
 			},
-			closeElement: function(name, context) {
+			closeElement: function(name) {
 				name.should.equal('foo');
-				helpers.verifyContext(1, 8, context);
 				closeCount++;
 			}
 		});
@@ -94,15 +102,13 @@ describe('opening and closing tags', function() {
 	it('outputs buffered text node before open element', function() {
 		var openCount = 0, textCount = 0;
 		helpers.parseString('foo<bar>', {
-			openElement: function(name, context) {
+			openElement: function(name) {
 				textCount.should.equal(1);
 				name.should.equal('bar');
-				helpers.verifyContext(1, 5, context);
 				openCount++;
 			},
-			text: function(name, context) {
+			text: function(name) {
 				name.should.equal('foo');
-				helpers.verifyContext(1, 1, context);
 				textCount++;
 			}
 		});
@@ -114,15 +120,13 @@ describe('opening and closing tags', function() {
 	it('outputs buffered text node before close element', function() {
 		var closeCount = 0, textCount = 0;
 		helpers.parseString('foo</bar>', {
-			closeElement: function(name, context) {
+			closeElement: function(name) {
 				textCount.should.equal(1);
 				name.should.equal('bar');
-				helpers.verifyContext(1, 6, context);
 				closeCount++;
 			},
-			text: function(name, context) {
+			text: function(name) {
 				name.should.equal('foo');
-				helpers.verifyContext(1, 1, context);
 				textCount++;
 			}
 		});
