@@ -235,7 +235,7 @@ function parseNext(context) {
 					parseEndElement(context);
 				} else {
 					//malformed html, let it slide through
-					appendText(buffer);
+					appendText(buffer, context);
 				}
 			}
 			else if (context.current === '!') {
@@ -247,7 +247,7 @@ function parseNext(context) {
 					parseComment(context);
 				} else {
 					//malformed html
-					appendText(buffer + '!');
+					appendText(buffer + '!', context);
 				}
 			}
 			else if (regexes.elementName.test(context.current)) {
@@ -256,7 +256,8 @@ function parseNext(context) {
 			}
 			else {
 				//malformed html, let it slide through
-				appendText(buffer);
+				context.read();
+				appendText(buffer, context);
 			}
 
 			break;

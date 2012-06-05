@@ -12,5 +12,5 @@ else
 	CMD="$CMD dot"
 fi
 
-CMD="$CMD ./tests/*"
+CMD="$CMD ./tests"
 $CMD

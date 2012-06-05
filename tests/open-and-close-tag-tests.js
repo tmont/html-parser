@@ -34,6 +34,25 @@ describe('opening and closing tags', function() {
 		closeCount.should.equal(1);
 	});
 
+	it('tag names can start with _', function() {
+		var openCount = 0, closeCount = 0;
+		helpers.parseString('<_foo></_foo>', {
+			openElement: function(name, context) {
+				name.should.equal('_foo');
+				helpers.verifyContext(1, 2, context);
+				openCount++;
+			},
+			closeElement: function(name, context) {
+				name.should.equal('_foo');
+				helpers.verifyContext(1, 9, context);
+				closeCount++;
+			}
+		});
+
+		openCount.should.equal(1);
+		closeCount.should.equal(1);
+	});
+
 	it('opening and closing tag mismatch', function() {
 		var openCount = 0, closeCount = 0;
 		helpers.parseString('<foo></bar>', {

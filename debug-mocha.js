@@ -16,8 +16,7 @@ fs.readdir(testDir, function(err, files) {
 		return;
 	}
 	files.forEach(function (file) {
-//		if (/text-tests.js$/.test(file)) {
-		if (path.extname(file) === '.js') {
+		if (/-tests\.js$/.test(file)) {
 			console.log('adding test file: %s', file);
 			mocha.addFile(testDir + file);
 		}
