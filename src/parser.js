@@ -134,9 +134,9 @@ function callbackText(context) {
 function parseNext(context) {
 	var current = context.current, buffer = current;
 	if (current == '<') {
-		buffer += context.readUntilNonWhitespace();
+		buffer += context.read();
 		if (context.current === '/') {
-			buffer += context.readUntilNonWhitespace();
+			buffer += context.read();
 			if (nameRegex.test(context.current)) {
 				callbackText(context);
 				parseEndElement(context);

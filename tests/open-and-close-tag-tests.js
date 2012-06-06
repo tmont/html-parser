@@ -67,7 +67,7 @@ describe('opening and closing tags', function() {
 
 	it('tag names with weird whitespace', function() {
 		var openCount = 0, closeCount = 0;
-		helpers.parseString('< \n  foo\n></  \n  bar    >', {
+		helpers.parseString('<foo\n></bar  \n  >', {
 			openElement: function(name) {
 				name.should.equal('foo');
 				openCount++;

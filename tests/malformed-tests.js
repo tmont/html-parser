@@ -19,21 +19,21 @@ describe('Malformed HTML', function() {
 		textCount.should.equal(1);
 	});
 
-	it('< followed by a letter without a following > is still a tag', function() {
+	it('< followed by whitespace is not a tag', function() {
 		var openCount = 0, textCount = 0;
-		helpers.parseString('< foo', {
+		helpers.parseString('< foo>', {
 			openElement: function(name) {
-				name.should.equal('foo');
 				openCount++;
 			},
 
 			text: function(value) {
+				value.should.equal('< foo>');
 				textCount++;
 			}
 		});
 
-		openCount.should.equal(1);
-		textCount.should.equal(0);
+		openCount.should.equal(0);
+		textCount.should.equal(1);
 	});
 
 	it('< followed by ! but not cdata or comment should be a text node', function() {
@@ -63,13 +63,13 @@ describe('Malformed HTML', function() {
 
 	it('</ not followed by a letter is text', function() {
 		var closeCount = 0, textCount = 0;
-		helpers.parseString('</5', {
+		helpers.parseString('</ foo>', {
 			closeElement: function(name) {
 				closeCount++;
 			},
 
 			text: function(value) {
-				value.should.equal('</5');
+				value.should.equal('</ foo>');
 				textCount++;
 			}
 		});
