@@ -8,7 +8,7 @@ function readAttribute(context) {
 		context.readRegex(/\s*=\s*/);
 		var quote = /['"]/.test(context.current) ? context.current : '';
 		var attributeValueRegex = !quote
-			? /(.*?)[\s>]/
+			? /(.*?)(?=[\s>])/
 			: new RegExp(quote + '(.*?)' + quote);
 
 		var match = attributeValueRegex.exec(context.substring) || [0, ''];
@@ -216,6 +216,7 @@ exports.sanitize = function(string, options) {
 	};
 
 	var sanitized = '', tagStack = [];
+	var ignoring = false;
 	var callbacks = {
 		docType: function(value) {
 			if (toRemove.docTypes) {
@@ -226,37 +227,47 @@ exports.sanitize = function(string, options) {
 
 		openElement: function(name) {
 			name = name.toLowerCase();
+			tagStack.push({ name: name });
 			if (toRemove.elements.indexOf(name) !== -1) {
+				if (!ignoring) {
+					ignoring = tagStack[tagStack.length - 1];
+				}
 				return;
 			}
 			sanitized += '<' + name;
-			tagStack.push(name);
 		},
 
 		closeOpenedElement: function(name, token) {
 			name = name.toLowerCase();
-			if (toRemove.elements.indexOf(name) !== -1) {
-				return;
-			}
-			sanitized += token;
 			if (token.length === 2) {
 				//self closing
 				tagStack.pop();
 			}
+			if (ignoring || toRemove.elements.indexOf(name) !== -1) {
+				return;
+			}
+			sanitized += token;
 		},
 
 		closeElement: function(name) {
 			name = name.toLowerCase();
-			if (toRemove.elements.indexOf(name) !== -1) {
+			if (tagStack.length && tagStack[tagStack.length - 1].name === name) {
+				var scope = tagStack.pop();
+				if (scope === ignoring) {
+					ignoring = null;
+				}
+			}
+			if (ignoring || toRemove.elements.indexOf(name) !== -1) {
 				return;
 			}
 			sanitized += '</' + name + '>';
-			if (tagStack.length && tagStack[tagStack.length - 1] === name) {
-				tagStack.pop();
-			}
 		},
 
 		attribute: function(name, value) {
+			if (ignoring) {
+				return;
+			}
+
 			name = name.toLowerCase();
 			if (toRemove.attributes.indexOf(name) !== -1) {
 				return;
@@ -266,23 +277,32 @@ exports.sanitize = function(string, options) {
 		},
 
 		text: function(value) {
+			if (ignoring) {
+				return;
+			}
 			sanitized += value;
 		},
 
 		comment: function(value) {
-			if (toRemove.comments) {
+			if (ignoring || toRemove.comments) {
 				return;
 			}
 			sanitized += '<!--' + value + '-->';
 		},
 
 		cdata: function(value) {
-			if (tagStack.indexOf('script') !== -1 || tagStack.indexOf('xmp') !== -1) {
-				sanitized += value;
+			if (ignoring) {
+				return;
 			}
-			else {
-				sanitized += '<![CDATA[' + value + ']]>';
+
+			for (var i = tagStack.length - 1; i >= 0; i--) {
+				if (tagStack[i].name === 'script' || tagStack[i].name === 'xmp') {
+					sanitized += value;
+					return;
+				}
 			}
+
+			sanitized += '<![CDATA[' + value + ']]>';
 		}
 	};
 

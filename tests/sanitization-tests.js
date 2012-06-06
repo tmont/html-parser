@@ -34,7 +34,8 @@ describe('Sanitization', function() {
 	});
 
 	it('should remove specified elements', function() {
-		var sanitized = helpers.parser.sanitize('<foo><bar><baz><bat></bat></baz></bar><bat></bat></foo>', {
+		var html = '<foo><bar><baz><bat foo=bar>asdf</bat></baz></bar><bat><!-- comment --></bat></foo>';
+		var sanitized = helpers.parser.sanitize(html, {
 			elements: [ 'bat' ]
 		});
 		sanitized.should.equal('<foo><bar><baz></baz></bar></foo>');
