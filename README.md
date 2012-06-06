@@ -10,6 +10,9 @@ main reason for it's existence.
 For example, you can just shove a blob of text into it, and it will happily
 parse as if it were valid XML.
 
+## Installation
+`npm install html-parser`
+
 ## Callback based parsing
 ```javascript
 var htmlParser = require('html-parser');
@@ -124,4 +127,12 @@ parseFile(fileName, encoding, callbacks, callback)
  * @return {String} The sanitized HTML
  */
 sanitize(htmlString, removalCallbacks)
+```
+
+## Development
+```shell
+git clone https://github.com/tmont/html-parser.git
+cd html-parser
+npm link
+npm test
 ```
