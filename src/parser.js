@@ -58,6 +58,17 @@ function parseOpenElement(context) {
 	var name = context.readRegex(nameRegex);
 	context.callbacks.openElement(name);
 	readAttributes(context, false);
+
+	if (name !== 'script' && name !== 'xmp') {
+		return;
+	}
+
+	//just read until the closing tags for elements that allow cdata
+	var regex = new RegExp('^([\\s\\S]*?)(?:$|</' + name + '>)', 'i');
+	var match = regex.exec(context.substring);
+	context.read(match[0].length);
+	context.callbacks.cdata(match[1]);
+	context.callbacks.closeElement(name);
 }
 
 function parseEndElement(context) {

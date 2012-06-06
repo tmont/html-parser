@@ -85,4 +85,53 @@ describe('CDATA', function() {
 		cdataCount.should.equal(1);
 		textCount.should.equal(1);
 	});
+
+	it('script tags do not require CDATA', function() {
+		var closeCount = 0, cdataCount = 0, openCount = 0;
+		helpers.parseString('<script><foo></script>', {
+			openElement: function(name) {
+				name.should.equal('script');
+				openCount++;
+			},
+
+			closeElement: function(name) {
+				name.should.equal('script');
+				closeCount++;
+			},
+
+			cdata: function(value) {
+				value.should.equal('<foo>');
+				cdataCount++;
+			}
+		});
+
+		cdataCount.should.equal(1);
+		closeCount.should.equal(1);
+		openCount.should.equal(1);
+	});
+
+	it('xmp tags do not require CDATA', function() {
+		var closeCount = 0, cdataCount = 0, openCount = 0;
+		helpers.parseString('<xmp><foo></xmp>', {
+			openElement: function(name) {
+				name.should.equal('xmp');
+				openCount++;
+			},
+
+			closeElement: function(name) {
+				name.should.equal('xmp');
+				closeCount++;
+			},
+
+			cdata: function(value) {
+				value.should.equal('<foo>');
+				cdataCount++;
+			}
+		});
+
+		cdataCount.should.equal(1);
+		closeCount.should.equal(1);
+		openCount.should.equal(1);
+	});
+
 });
