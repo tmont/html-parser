@@ -183,9 +183,26 @@ function parseNext(context) {
 	}
 }
 
-exports.parse = function(string, options) {
-	string = string.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-	var context = parseContext.create(string, options);
+/**
+ * Parses the given string o' HTML, executing each callback when it
+ * encounters a token.
+ *
+ * @param {String} htmlString A string o' HTML
+ * @param {Object} [callbacks] Callbacks for each token
+ * @param {Function} [callbacks.attribute] Takes the name of the attribute and its value
+ * @param {Function} [callbacks.openElement] Takes the tag name of the element
+ * @param {Function} [callbacks.closeOpenedElement] Takes the tag name of the element and the token used to
+ * close it (">", "/>", "?>")
+ * @param {Function} [callbacks.closeElement] Takes the name of the element
+ * @param {Function} [callbacks.comment] Takes the content of the comment
+ * @param {Function} [callbacks.docType] Takes the content of the document type declaration
+ * @param {Function} [callbacks.cdata] Takes the content of the CDATA
+ * @param {Function} [callbacks.xmlProlog] Takes no arguments
+ * @param {Function} [callbacks.text] Takes the value of the text node
+ */
+exports.parse = function(htmlString, callbacks) {
+	htmlString = htmlString.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+	var context = parseContext.create(htmlString, callbacks);
 	do {
 		parseNext(context);
 	} while (!context.isEof());
@@ -193,7 +210,18 @@ exports.parse = function(string, options) {
 	callbackText(context);
 };
 
-exports.parseFile = function(fileName, encoding, options, callback) {
+/**
+ * Parses the HTML contained in the given file asynchronously.
+ *
+ * Note that this is merely a convenience function, it will still read the entire
+ * contents of the file into memory.
+ *
+ * @param {String} fileName Name of the file to parse
+ * @param {String} [encoding] Optional encoding to read the file in, defaults to utf8
+ * @param {Object} [callbacks] Callbacks to pass to parse()
+ * @param {Function} [callback]
+ */
+exports.parseFile = function(fileName, encoding, callbacks, callback) {
 	var fs = require('fs');
 	fs.readFile(fileName, encoding || 'utf8', function(err, contents) {
 		if (err) {
@@ -201,17 +229,32 @@ exports.parseFile = function(fileName, encoding, options, callback) {
 			return;
 		}
 
-		exports.parse(contents, options);
+		exports.parse(contents, callbacks);
 		callback && callback();
 	});
 };
 
-exports.sanitize = function(string, options) {
-	options = options || {};
-
+/**
+ * Sanitizes an HTML string.
+ *
+ * If removalCallbacks is not given, it will simply reformat the HTML
+ * (i.e. converting all tags to lowercase, etc.). Note that this function
+ * assumes that the HTML is decently formatted and kind of valid. It
+ * may exhibit undefined or unexpected behavior if your HTML is trash.
+ *
+ * @param {String} htmlString A string o' HTML
+ * @param {Object} [removalCallbacks] Callbacks for each token type
+ * @param {Function|Array} [removalCallbacks.attributes] Callback or array of specific attributes to strip
+ * @param {Function|Array} [removalCallbacks.elements] Callback or array of specific elements to strip
+ * @param {Function|Boolean} [removalCallbacks.comments] Callback or boolean indicating to strip comments
+ * @param {Function|Boolean} [removalCallbacks.docTypes] Callback or boolean indicating to strip doc type declarations
+ * @return {String} The sanitized HTML
+ */
+exports.sanitize = function(htmlString, removalCallbacks) {
+	removalCallbacks = removalCallbacks || {};
 
 	function createArrayCallback(index) {
-		var callbackOrArray = options[index] || [];
+		var callbackOrArray = removalCallbacks[index] || [];
 		if (typeof(callbackOrArray) === 'function') {
 			return function() {
 				return callbackOrArray.apply(null, arguments);
@@ -224,7 +267,7 @@ exports.sanitize = function(string, options) {
 	}
 
 	function createBoolCallback(index) {
-		var callbackOrBool = options[index] || false;
+		var callbackOrBool = removalCallbacks[index] || false;
 		if (typeof(callbackOrBool) === 'function') {
 			return function() {
 				return callbackOrBool.apply(null, arguments);
@@ -334,6 +377,6 @@ exports.sanitize = function(string, options) {
 		}
 	};
 
-	exports.parse(string, callbacks);
+	exports.parse(htmlString, callbacks);
 	return sanitized;
 };
