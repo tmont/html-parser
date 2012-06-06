@@ -208,18 +208,46 @@ exports.parseFile = function(fileName, encoding, options, callback) {
 
 exports.sanitize = function(string, options) {
 	options = options || {};
+
+
+	function createArrayCallback(index) {
+		var callbackOrArray = options[index] || [];
+		if (typeof(callbackOrArray) === 'function') {
+			return function() {
+				return callbackOrArray.apply(null, arguments);
+			}
+		} else {
+			return function(value) {
+				return callbackOrArray.indexOf(value) !== -1;
+			}
+		}
+	}
+
+	function createBoolCallback(index) {
+		var callbackOrBool = options[index] || false;
+		if (typeof(callbackOrBool) === 'function') {
+			return function() {
+				return callbackOrBool.apply(null, arguments);
+			}
+		} else {
+			return function() {
+				return callbackOrBool;
+			}
+		}
+	}
+
 	var toRemove = {
-		attributes: options.attributes || [],
-		elements: options.elements || [],
-		comments: !!options.comments,
-		docTypes: !!options.docTypes
+		attributes: createArrayCallback('attributes'),
+		elements: createArrayCallback('elements'),
+		comments: createBoolCallback('comments'),
+		docTypes: createBoolCallback('docTypes')
 	};
 
 	var sanitized = '', tagStack = [];
 	var ignoring = false;
 	var callbacks = {
 		docType: function(value) {
-			if (toRemove.docTypes) {
+			if (toRemove.docTypes(value)) {
 				return;
 			}
 			sanitized += '<!doctype ' + value + '>';
@@ -228,7 +256,7 @@ exports.sanitize = function(string, options) {
 		openElement: function(name) {
 			name = name.toLowerCase();
 			tagStack.push({ name: name });
-			if (toRemove.elements.indexOf(name) !== -1) {
+			if (toRemove.elements(name)) {
 				if (!ignoring) {
 					ignoring = tagStack[tagStack.length - 1];
 				}
@@ -243,7 +271,7 @@ exports.sanitize = function(string, options) {
 				//self closing
 				tagStack.pop();
 			}
-			if (ignoring || toRemove.elements.indexOf(name) !== -1) {
+			if (ignoring || toRemove.elements(name)) {
 				return;
 			}
 			sanitized += token;
@@ -257,7 +285,7 @@ exports.sanitize = function(string, options) {
 					ignoring = null;
 				}
 			}
-			if (ignoring || toRemove.elements.indexOf(name) !== -1) {
+			if (ignoring || toRemove.elements(name)) {
 				return;
 			}
 			sanitized += '</' + name + '>';
@@ -269,7 +297,7 @@ exports.sanitize = function(string, options) {
 			}
 
 			name = name.toLowerCase();
-			if (toRemove.attributes.indexOf(name) !== -1) {
+			if (toRemove.attributes(name)) {
 				return;
 			}
 
@@ -284,7 +312,7 @@ exports.sanitize = function(string, options) {
 		},
 
 		comment: function(value) {
-			if (ignoring || toRemove.comments) {
+			if (ignoring || toRemove.comments(value)) {
 				return;
 			}
 			sanitized += '<!--' + value + '-->';
