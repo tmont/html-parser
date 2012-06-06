@@ -72,8 +72,12 @@ function parseOpenElement(context) {
 	var regex = new RegExp('^([\\s\\S]*?)(?:$|</(' + name + ')\\s*>)', 'i');
 	var match = regex.exec(context.substring);
 	context.read(match[0].length);
-	context.callbacks.cdata(match[1]);
-	context.callbacks.closeElement(match[2]);
+	if (match[1]) {
+		context.callbacks.cdata(match[1]);
+	}
+	if (match[2]) {
+		context.callbacks.closeElement(match[2]);
+	}
 }
 
 function parseEndElement(context) {

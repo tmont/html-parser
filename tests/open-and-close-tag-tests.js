@@ -203,4 +203,45 @@ describe('opening and closing tags', function() {
 		closeCount.should.equal(1);
 		openCount.should.equal(1);
 	});
+
+	it('should not parse cdata or close element if script tag is unclosed', function() {
+		var closeCount = 0, openCount = 0, cdataCount = 0;
+		helpers.parseString('<script>', {
+			openElement: function(name) {
+				name.should.equal('script');
+				openCount++;
+			},
+			cdata: function(value) {
+				cdataCount++;
+			},
+			closeElement: function(name) {
+				closeCount++;
+			}
+		});
+
+		closeCount.should.equal(0);
+		cdataCount.should.equal(0);
+		openCount.should.equal(1);
+	});
+
+	it('should not parse cdata if script tag is empty', function() {
+		var closeCount = 0, openCount = 0, cdataCount = 0;
+		helpers.parseString('<script></script>', {
+			openElement: function(name) {
+				name.should.equal('script');
+				openCount++;
+			},
+			cdata: function(value) {
+				cdataCount++;
+			},
+			closeElement: function(name) {
+				name.should.equal('script');
+				closeCount++;
+			}
+		});
+
+		closeCount.should.equal(1);
+		cdataCount.should.equal(0);
+		openCount.should.equal(1);
+	});
 });
