@@ -85,4 +85,28 @@ describe('Sanitization', function() {
 		});
 		sanitized.should.equal('<foo>asdf</foo>');
 	});
+
+	it('should remove element with attributes', function() {
+		var html = '<foo><bar baz="bat"></bar></foo>';
+		var sanitized = helpers.parser.sanitize(html, {
+			elements: [ 'bar' ]
+		});
+		sanitized.should.equal('<foo></foo>');
+	});
+
+	it('should remove script tag with whitespace', function() {
+		var html = '<p>foo<script ></script ></p>';
+		var sanitized = helpers.parser.sanitize(html, {
+			elements: [ 'script' ]
+		});
+		sanitized.should.equal('<p>foo</p>');
+	});
+
+	it('should remove script tag with attributes', function() {
+		var html = '<p>foo<script type="text/javascript">alert("foo");</script></p>';
+		var sanitized = helpers.parser.sanitize(html, {
+			elements: [ 'script' ]
+		});
+		sanitized.should.equal('<p>foo</p>');
+	});
 });

@@ -152,4 +152,55 @@ describe('opening and closing tags', function() {
 		closeCount.should.equal(1);
 		openCount.should.equal(1);
 	});
+
+	it('closing script tags allow whitespace', function() {
+		var closeCount = 0, openCount = 0;
+		helpers.parseString('<script></script \n >', {
+			openElement: function(name) {
+				name.should.equal('script');
+				openCount++;
+			},
+			closeElement: function(name) {
+				name.should.equal('script');
+				closeCount++;
+			}
+		});
+
+		closeCount.should.equal(1);
+		openCount.should.equal(1);
+	});
+
+	it('closing xmp tags allow whitespace', function() {
+		var closeCount = 0, openCount = 0;
+		helpers.parseString('<xmp></xmp \n >', {
+			openElement: function(name) {
+				name.should.equal('xmp');
+				openCount++;
+			},
+			closeElement: function(name) {
+				name.should.equal('xmp');
+				closeCount++;
+			}
+		});
+
+		closeCount.should.equal(1);
+		openCount.should.equal(1);
+	});
+
+	it('closing script tag is not case sensitive', function() {
+		var closeCount = 0, openCount = 0;
+		helpers.parseString('<script></SCRIPT>', {
+			openElement: function(name) {
+				name.should.equal('script');
+				openCount++;
+			},
+			closeElement: function(name) {
+				name.should.equal('SCRIPT');
+				closeCount++;
+			}
+		});
+
+		closeCount.should.equal(1);
+		openCount.should.equal(1);
+	});
 });
