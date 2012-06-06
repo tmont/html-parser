@@ -312,7 +312,10 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 			name = name.toLowerCase();
 			if (token.length === 2) {
 				//self closing
-				tagStack.pop();
+				var scope = tagStack.pop();
+				if (scope === ignoring) {
+					ignoring = null;
+				}
 			}
 			if (ignoring || toRemove.elements(name)) {
 				return;

@@ -77,4 +77,12 @@ describe('Sanitization', function() {
 		});
 		sanitized.should.equal('<foo><bar><baz></baz></bar></foo>');
 	});
+
+	it('should remove self-closing elements', function() {
+		var html = '<foo><br />asdf</foo>';
+		var sanitized = helpers.parser.sanitize(html, {
+			elements: [ 'br' ]
+		});
+		sanitized.should.equal('<foo>asdf</foo>');
+	});
 });
