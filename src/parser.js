@@ -178,6 +178,7 @@ function parseNext(context) {
 }
 
 exports.parse = function(string, options) {
+	string = string.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 	var context = parseContext.create(string, options);
 	do {
 		parseNext(context);
