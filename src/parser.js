@@ -37,20 +37,24 @@ function readAttributes(context, isXml) {
 			next = context.read();
 		}
 	}
+}
 
+function readCloserForOpenedElement(context, name) {
 	if (context.current === '/') {
 		//self closing tag "/>"
 		context.readUntilNonWhitespace();
 		context.read();
-		context.callbacks.closeOpenedElement('/>');
-	} else if (isXml) {
+		context.callbacks.closeOpenedElement(name, '/>');
+	}
+	else if (context.current === '?') {
 		//xml closing "?>"
 		context.read(2);
-		context.callbacks.closeOpenedElement('?>');
-	} else {
+		context.callbacks.closeOpenedElement(name, '?>');
+	}
+	else {
 		//normal closing ">"
 		context.read();
-		context.callbacks.closeOpenedElement('>');
+		context.callbacks.closeOpenedElement(name, '>');
 	}
 }
 
@@ -58,6 +62,7 @@ function parseOpenElement(context) {
 	var name = context.readRegex(nameRegex);
 	context.callbacks.openElement(name);
 	readAttributes(context, false);
+	readCloserForOpenedElement(context, name);
 
 	if (name !== 'script' && name !== 'xmp') {
 		return;
@@ -108,10 +113,11 @@ function parseDocType(context) {
 }
 
 function parseXmlProlog(context) {
-	//read "?xml "
-	context.read(5);
+	//read "?xml"
+	context.read(4);
 	context.callbacks.xmlProlog();
 	readAttributes(context, true);
+	readCloserForOpenedElement(context, '?xml');
 }
 
 function appendText(value, context) {
@@ -198,4 +204,88 @@ exports.parseFile = function(fileName, encoding, options, callback) {
 		exports.parse(contents, options);
 		callback && callback();
 	});
+};
+
+exports.sanitize = function(string, options) {
+	options = options || {};
+	var toRemove = {
+		attributes: options.attributes || [],
+		elements: options.elements || [],
+		comments: !!options.comments,
+		docTypes: !!options.docTypes
+	};
+
+	var sanitized = '', tagStack = [];
+	var callbacks = {
+		docType: function(value) {
+			if (toRemove.docTypes) {
+				return;
+			}
+			sanitized += '<!doctype ' + value + '>';
+		},
+
+		openElement: function(name) {
+			name = name.toLowerCase();
+			if (toRemove.elements.indexOf(name) !== -1) {
+				return;
+			}
+			sanitized += '<' + name;
+			tagStack.push(name);
+		},
+
+		closeOpenedElement: function(name, token) {
+			name = name.toLowerCase();
+			if (toRemove.elements.indexOf(name) !== -1) {
+				return;
+			}
+			sanitized += token;
+			if (token.length === 2) {
+				//self closing
+				tagStack.pop();
+			}
+		},
+
+		closeElement: function(name) {
+			name = name.toLowerCase();
+			if (toRemove.elements.indexOf(name) !== -1) {
+				return;
+			}
+			sanitized += '</' + name + '>';
+			if (tagStack.length && tagStack[tagStack.length - 1] === name) {
+				tagStack.pop();
+			}
+		},
+
+		attribute: function(name, value) {
+			name = name.toLowerCase();
+			if (toRemove.attributes.indexOf(name) !== -1) {
+				return;
+			}
+
+			sanitized += ' ' + name + '="' + value.replace(/"/g, '&quot;') + '"';
+		},
+
+		text: function(value) {
+			sanitized += value;
+		},
+
+		comment: function(value) {
+			if (toRemove.comments) {
+				return;
+			}
+			sanitized += '<!--' + value + '-->';
+		},
+
+		cdata: function(value) {
+			if (tagStack.indexOf('script') !== -1 || tagStack.indexOf('xmp') !== -1) {
+				sanitized += value;
+			}
+			else {
+				sanitized += '<![CDATA[' + value + ']]>';
+			}
+		}
+	};
+
+	exports.parse(string, callbacks);
+	return sanitized;
 };

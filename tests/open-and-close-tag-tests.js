@@ -142,8 +142,9 @@ describe('opening and closing tags', function() {
 				name.should.equal('foo');
 				openCount++;
 			},
-			closeOpenedElement: function(name) {
-				name.should.equal('/>');
+			closeOpenedElement: function(name, token) {
+				name.should.equal('foo');
+				token.should.equal('/>');
 				closeCount++;
 			}
 		});
