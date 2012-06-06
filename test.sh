@@ -1,6 +1,6 @@
 MOCHA=./node_modules/.bin/mocha
-if [ -z "$MOCHA" ]; then
-	echo "Run 'npm dev-dependencies' to install testing dependencies"
+if [ ! -x "$MOCHA" ]; then
+	echo "Run 'npm link' to install testing dependencies"
 	exit 1
 fi
 
