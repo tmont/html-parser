@@ -1,5 +1,4 @@
-html-parser
------------
+# html-parser
 
 Now with less explosions!
 
@@ -11,8 +10,7 @@ main reason for it's existence.
 For example, you can just shove a blob of text into it, and it will happily
 parse as if it were valid XML.
 
-Callback based parsing
-======================
+## Callback based parsing
 ```javascript
 var htmlParser = require('html-parser');
 
@@ -41,9 +39,7 @@ close: html
 */
 ```
 
-Sanitization
-============
-
+## Sanitization
 ```javascript
 var htmlParser = require('html-parser');
 
@@ -58,3 +54,21 @@ console.log(sanitized);
 //<p>blah blah</p>
 ```
 
+### Using callbacks
+```javascript
+var htmlParser = require('html-parser');
+
+var html = '<script>alert(\'danger!\')</script><p onclick="alert(\'danger!\')">blah blah<!-- useless comment --></p>';
+var sanitized = htmlParser.sanitize(html, {
+	elements: function(name) {
+		return name === 'script';
+	},
+	attributes: function(name, value) {
+		return /^on/i.test(name) || /^javascript:/i.test(value);
+	}
+	comments: true
+});
+
+console.log(sanitized);
+//<p>blah blah</p>
+```
