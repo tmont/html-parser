@@ -109,4 +109,12 @@ describe('Sanitization', function() {
 		});
 		sanitized.should.equal('<p>foo</p>');
 	});
+
+	it('should handle attributes with no value', function() {
+		var html = '<p novalue1 novalue2>foo</p>';
+		var sanitized = helpers.parser.sanitize(html, {
+			attributes: [ 'novalue1' ]
+		});
+		sanitized.should.equal('<p novalue2>foo</p>');
+	});
 });

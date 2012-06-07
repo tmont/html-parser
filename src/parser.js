@@ -351,7 +351,10 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 				return;
 			}
 
-			sanitized += ' ' + name + '="' + value.replace(/"/g, '&quot;') + '"';
+			sanitized += ' ' + name;
+			if (value) {
+				sanitized += '="' + value.replace(/"/g, '&quot;') + '"';
+			}
 		},
 
 		text: function(value) {
