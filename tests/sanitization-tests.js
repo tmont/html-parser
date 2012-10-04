@@ -117,4 +117,35 @@ describe('Sanitization', function() {
 		});
 		sanitized.should.equal('<p novalue2>foo</p>');
 	});
+
+	describe('self-closing tags that don\'t close', function() {
+		var selfClosingTags = {
+			meta: 1,
+			br: 1,
+			link: 1,
+			area: 1,
+			base: 1,
+			col: 1,
+			command: 1,
+			embed: 1,
+			hr: 1,
+			img: 1,
+			input: 1,
+			param: 1,
+			source: 1
+		};
+
+		for (var tag in selfClosingTags) {
+			it(tag + ' tag without a "/>"', (function(tag) {
+				return function() {
+					var html = '<' + tag + '><p>foo</p>';
+					var sanitized = helpers.parser.sanitize(html, {
+						elements: [ tag ]
+					});
+
+					sanitized.should.equal('<p>foo</p>');
+				}
+			}(tag)));
+		}
+	});
 });

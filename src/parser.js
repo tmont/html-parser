@@ -292,6 +292,21 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 
 	var sanitized = '', tagStack = [];
 	var ignoring = false;
+	var selfClosingTags = {
+		meta: 1,
+		br: 1,
+		link: 1,
+		area: 1,
+		base :1,
+		col: 1,
+		command: 1,
+		embed: 1,
+		hr: 1,
+		img: 1,
+		input: 1,
+		param: 1,
+		source: 1
+	};
 	var callbacks = {
 		docType: function(value) {
 			if (toRemove.docTypes(value)) {
@@ -302,6 +317,19 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 
 		openElement: function(name) {
 			name = name.toLowerCase();
+			//if there is an unclosed self-closing tag in the stack, then
+			//pop it off (assumed to be malformed html).
+			if (tagStack.length) {
+				var scope = tagStack[tagStack.length - 1];
+				//console.log(scope);
+				if (selfClosingTags[scope.name]) {
+					tagStack.pop();
+					if (scope === ignoring) {
+						ignoring = null;
+					}
+				}
+			}
+
 			tagStack.push({ name: name });
 			if (toRemove.elements(name)) {
 				if (!ignoring) {
