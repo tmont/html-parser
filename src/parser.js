@@ -283,6 +283,10 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 		}
 	}
 
+	function last(arr) {
+		return arr[arr.length - 1];
+	}
+
 	var toRemove = {
 		attributes: createArrayCallback('attributes'),
 		elements: createArrayCallback('elements'),
@@ -291,7 +295,7 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 	};
 
 	var sanitized = '', tagStack = [];
-	var ignoring = false;
+	var ignoreStack = [];
 	var selfClosingTags = {
 		meta: 1,
 		br: 1,
@@ -320,21 +324,22 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 			//if there is an unclosed self-closing tag in the stack, then
 			//pop it off (assumed to be malformed html).
 			if (tagStack.length) {
-				var scope = tagStack[tagStack.length - 1];
-				//console.log(scope);
-				if (selfClosingTags[scope.name]) {
+				var scope = last(tagStack);
+				if (selfClosingTags[scope]) {
 					tagStack.pop();
-					if (scope === ignoring) {
-						ignoring = null;
+					if (scope === last(ignoreStack)) {
+						ignoreStack.pop();
 					}
 				}
 			}
 
-			tagStack.push({ name: name });
+			if (ignoreStack.length) {
+				return;
+			}
+
+			tagStack.push(name);
 			if (toRemove.elements(name)) {
-				if (!ignoring) {
-					ignoring = tagStack[tagStack.length - 1];
-				}
+				ignoreStack.push(name);
 				return;
 			}
 			sanitized += '<' + name;
@@ -345,11 +350,11 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 			if (token.length === 2) {
 				//self closing
 				var scope = tagStack.pop();
-				if (scope === ignoring) {
-					ignoring = null;
+				if (scope === last(ignoreStack)) {
+					ignoreStack.pop();
 				}
 			}
-			if (ignoring || toRemove.elements(name)) {
+			if (ignoreStack.length || toRemove.elements(name)) {
 				return;
 			}
 			sanitized += token;
@@ -357,20 +362,19 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 
 		closeElement: function(name) {
 			name = name.toLowerCase();
-			if (tagStack.length && tagStack[tagStack.length - 1].name === name) {
-				var scope = tagStack.pop();
-				if (scope === ignoring) {
-					ignoring = null;
+			if (tagStack.length && last(tagStack) === name) {
+				if (tagStack.pop() === last(ignoreStack)) {
+					ignoreStack.pop();
 				}
 			}
-			if (ignoring || toRemove.elements(name)) {
+			if (ignoreStack.length || toRemove.elements(name)) {
 				return;
 			}
 			sanitized += '</' + name + '>';
 		},
 
 		attribute: function(name, value) {
-			if (ignoring) {
+			if (ignoreStack.length) {
 				return;
 			}
 
@@ -386,26 +390,26 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 		},
 
 		text: function(value) {
-			if (ignoring) {
+			if (ignoreStack.length) {
 				return;
 			}
 			sanitized += value;
 		},
 
 		comment: function(value) {
-			if (ignoring || toRemove.comments(value)) {
+			if (ignoreStack.length || toRemove.comments(value)) {
 				return;
 			}
 			sanitized += '<!--' + value + '-->';
 		},
 
 		cdata: function(value) {
-			if (ignoring) {
+			if (ignoreStack.length) {
 				return;
 			}
 
 			for (var i = tagStack.length - 1; i >= 0; i--) {
-				if (tagStack[i].name === 'script' || tagStack[i].name === 'xmp') {
+				if (tagStack[i] === 'script' || tagStack[i] === 'xmp') {
 					sanitized += value;
 					return;
 				}

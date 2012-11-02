@@ -118,7 +118,7 @@ describe('Sanitization', function() {
 		sanitized.should.equal('<p novalue2>foo</p>');
 	});
 
-	describe('self-closing tags that don\'t close', function() {
+	describe('self-closing tag', function() {
 		var selfClosingTags = {
 			meta: 1,
 			br: 1,
@@ -136,7 +136,7 @@ describe('Sanitization', function() {
 		};
 
 		for (var tag in selfClosingTags) {
-			it(tag + ' tag without a "/>"', (function(tag) {
+			it('"' + tag + '" without a closing "/>"', (function(tag) {
 				return function() {
 					var html = '<' + tag + '><p>foo</p>';
 					var sanitized = helpers.parser.sanitize(html, {
@@ -147,5 +147,13 @@ describe('Sanitization', function() {
 				}
 			}(tag)));
 		}
+	});
+
+	it('should remove tags within tags', function() {
+		var html = '<foo><bar>lolz</bar><bat></bat></foo><baz>oh hai there</baz>';
+		var sanitized = helpers.parser.sanitize(html, {
+			elements: [ 'foo', 'bar' ]
+		});
+		sanitized.should.equal('<baz>oh hai there</baz>');
 	});
 });
