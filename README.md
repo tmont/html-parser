@@ -1,5 +1,7 @@
 # html-parser
 
+[![Build Status](https://travis-ci.org/tmont/html-parser.png)](https://travis-ci.org/tmont/html-parser)
+
 Now with less explosions!
 
 The purpose of this library is not to be the best XML parsing library ever

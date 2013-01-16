@@ -24,6 +24,6 @@
 	},
 
 	"scripts": {
-		"test": "./test.sh"
+		"test": "node_modules/.bin/mocha -R spec ./tests"
 	}
 }
