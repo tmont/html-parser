@@ -9,6 +9,10 @@
 		"url": "http://tmont.com/"
 	},
 
+	"contributors": [
+		{ "name": "jdponomarev" }
+	],
+
 	"main": "./src/parser.js",
 	"directories": {
 		"lib": "./src"
