@@ -156,4 +156,14 @@ describe('Sanitization', function() {
 		});
 		sanitized.should.equal('<baz>oh hai there</baz>');
 	});
+
+	it('should sanitize based on attribute value', function() {
+		var html = '<foo id="abc"></foo><foo id="def"></foo>';
+		var sanitized = helpers.parser.sanitize(html, {
+			attributes: function(name, value) {
+				return value === 'abc';
+			}
+		});
+		sanitized.should.equal('<foo></foo><foo id="def"></foo>');
+	});
 });

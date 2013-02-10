@@ -379,7 +379,7 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 			}
 
 			name = name.toLowerCase();
-			if (toRemove.attributes(name,value)) {
+			if (toRemove.attributes(name, value)) {
 				return;
 			}
 
