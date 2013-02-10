@@ -19,7 +19,7 @@ parse as if it were valid XML.
 ```javascript
 var htmlParser = require('html-parser');
 
-var html = '<!doctype html><html><body onload="alert(\'hello\');">Yo<br />dawg</body></html>';
+var html = '<!doctype html><html><body onload="alert(\'hello\');">Hello<br />world</body></html>';
 htmlParser.parse(html, {
 	openElement: function(name) { console.log('open: %s', name); },
 	closeOpenedElement: function(name, token) { console.log('close token: %s', token); },
@@ -27,7 +27,8 @@ htmlParser.parse(html, {
 	comment: function(value) { console.log('comment: %s', value); },
 	cdata: function(value) { console.log('cdata: %s', value); },
 	attribute: function(name, value) { console.log('attribute: %s=%s', name, value); },
-	docType: function(value) { console.log('doctype: %s', value); }
+	docType: function(value) { console.log('doctype: %s', value); },
+	text: function(value) { console.log('text: %s', value); }
 });
 
 /*
@@ -37,8 +38,10 @@ close token: >
 open: body
 attribute: onload=alert('hello');
 close token: >
+text: Hello
 open: br
 close token: />
+text: world
 close: body
 close: html
 */
