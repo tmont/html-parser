@@ -12,6 +12,8 @@ main reason for it's existence.
 For example, you can just shove a blob of text into it, and it will happily
 parse as if it were valid XML.
 
+Licensed under [MIT](./LICENSE).
+
 ## Installation
 `npm install html-parser`
 

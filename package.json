@@ -9,6 +9,8 @@
 		"url": "http://tmont.com/"
 	},
 
+	"license": "MIT", 
+
 	"contributors": [
 		{ "name": "jdponomarev" }
 	],
