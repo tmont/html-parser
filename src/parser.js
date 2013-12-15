@@ -40,21 +40,27 @@ function readAttributes(context, isXml) {
 }
 
 function readCloserForOpenedElement(context, name) {
+    var unary;
+    var emptyElements = { 'area': true, 'base': true, 'basefont': true, 'br': true, 'col': true, 'frame':   true, 'hr': true, 'img': true, 'input': true, 'isindex': true, 'link': true, 'meta': true, 'param': true, 'e  mbed': true }
+    if (name in emptyElements) {
+      unary = true;
+    }
+
 	if (context.current === '/') {
 		//self closing tag "/>"
 		context.readUntilNonWhitespace();
 		context.read();
-		context.callbacks.closeOpenedElement(name, '/>');
+		context.callbacks.closeOpenedElement(name, '/>', unary);
 	}
 	else if (context.current === '?') {
 		//xml closing "?>"
 		context.read(2);
-		context.callbacks.closeOpenedElement(name, '?>');
+		context.callbacks.closeOpenedElement(name, '?>', unary);
 	}
 	else {
 		//normal closing ">"
 		context.read();
-		context.callbacks.closeOpenedElement(name, '>');
+		context.callbacks.closeOpenedElement(name, '>', unary);
 	}
 }
 
@@ -195,8 +201,9 @@ function parseNext(context) {
  * @param {Object} [callbacks] Callbacks for each token
  * @param {Function} [callbacks.attribute] Takes the name of the attribute and its value
  * @param {Function} [callbacks.openElement] Takes the tag name of the element
- * @param {Function} [callbacks.closeOpenedElement] Takes the tag name of the element and the token used to
- * close it (">", "/>", "?>")
+ * @param {Function} [callbacks.closeOpenedElement] Takes the tag name of the element, the token used to
+ * close it (">", "/>", "?>") and a boolean telling if it is unary or not (i.e., if it doesn't requires
+ * another tag closing it later)
  * @param {Function} [callbacks.closeElement] Takes the name of the element
  * @param {Function} [callbacks.comment] Takes the content of the comment
  * @param {Function} [callbacks.docType] Takes the content of the document type declaration

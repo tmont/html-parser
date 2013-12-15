@@ -31,6 +31,14 @@ describe('opening and closing tags', function() {
 		closeCount.should.equal(1);
 	});
 
+	it('unary html5 element should be signalized as unary', function() {
+		helpers.parseString('<input>', {
+            closeOpenedElement: function(name, token, unary) {
+                unary.should.be.ok;
+            }
+		});
+	});
+
 	it('tag names can start with _', function() {
 		var openCount = 0, closeCount = 0;
 		helpers.parseString('<_foo></_foo>', {

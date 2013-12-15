@@ -24,7 +24,7 @@ var htmlParser = require('html-parser');
 var html = '<!doctype html><html><body onload="alert(\'hello\');">Hello<br />world</body></html>';
 htmlParser.parse(html, {
 	openElement: function(name) { console.log('open: %s', name); },
-	closeOpenedElement: function(name, token) { console.log('close token: %s', token); },
+	closeOpenedElement: function(name, token, unary) { console.log('token: %s, unary: %s', token, unary); },
 	closeElement: function(name) { console.log('close: %s', name); },
 	comment: function(value) { console.log('comment: %s', value); },
 	cdata: function(value) { console.log('cdata: %s', value); },
@@ -42,7 +42,7 @@ attribute: onload=alert('hello');
 close token: >
 text: Hello
 open: br
-close token: />
+close token: />, unary: true
 text: world
 close: body
 close: html
