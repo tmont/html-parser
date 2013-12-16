@@ -12,7 +12,8 @@
 	"license": "MIT",
 
 	"contributors": [
-		{ "name": "jdponomarev" }
+		{ "name": "jdponomarev" },
+		{ "name": "fiatjaf" }
 	],
 
 	"main": "./src/parser.js",
