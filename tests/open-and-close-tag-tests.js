@@ -31,11 +31,27 @@ describe('opening and closing tags', function() {
 		closeCount.should.equal(1);
 	});
 
-	it('unary html5 element should be signalized as unary', function() {
-		helpers.parseString('<input>', {
-            closeOpenedElement: function(name, token, unary) {
-                unary.should.be.ok;
-            }
+	describe('unary html5 elements', function() {
+		var elements = [
+			'area', 'base', 'basefont', 'br', 'col', 'frame',
+			'hr', 'img', 'input', 'isindex', 'link', 'meta',
+			'param', 'embed'
+		];
+
+		elements.forEach(function(element) {
+			it(element + ' should be unary', function() {
+				var closeOpenedCount = 0;
+				helpers.parseString('<' + element + '>', {
+					closeOpenedElement: function(name, token, unary) {
+						name.should.equal(element);
+						token.should.equal('>');
+						unary.should.be.true;
+						closeOpenedCount++;
+					}
+				});
+
+				closeOpenedCount.should.equal(1);
+			});
 		});
 	});
 

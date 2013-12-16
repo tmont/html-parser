@@ -27,6 +27,7 @@ function readAttributes(context, isXml) {
 
 		return context.current === '>' || (context.current === '/' && context.peekIgnoreWhitespace() === '>');
 	}
+
 	var next = context.current;
 	while (!context.isEof() && !isClosingToken()) {
 		if (nameRegex.test(next)) {
@@ -40,27 +41,29 @@ function readAttributes(context, isXml) {
 }
 
 function readCloserForOpenedElement(context, name) {
-    var unary;
-    var emptyElements = { 'area': true, 'base': true, 'basefont': true, 'br': true, 'col': true, 'frame':   true, 'hr': true, 'img': true, 'input': true, 'isindex': true, 'link': true, 'meta': true, 'param': true, 'e  mbed': true }
-    if (name in emptyElements) {
-      unary = true;
-    }
+	var emptyElements = {
+		'area': true, 'base': true, 'basefont': true, 'br': true, 'col': true, 'frame': true,
+		'hr': true, 'img': true, 'input': true, 'isindex': true, 'link': true, 'meta': true,
+		'param': true, 'embed': true
+	};
+
+	var isUnary = name in emptyElements;
 
 	if (context.current === '/') {
 		//self closing tag "/>"
 		context.readUntilNonWhitespace();
 		context.read();
-		context.callbacks.closeOpenedElement(name, '/>', unary);
+		context.callbacks.closeOpenedElement(name, '/>', isUnary);
 	}
 	else if (context.current === '?') {
 		//xml closing "?>"
 		context.read(2);
-		context.callbacks.closeOpenedElement(name, '?>', unary);
+		context.callbacks.closeOpenedElement(name, '?>', isUnary);
 	}
 	else {
 		//normal closing ">"
 		context.read();
-		context.callbacks.closeOpenedElement(name, '>', unary);
+		context.callbacks.closeOpenedElement(name, '>', isUnary);
 	}
 }
 
@@ -308,7 +311,7 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 		br: 1,
 		link: 1,
 		area: 1,
-		base :1,
+		base: 1,
 		col: 1,
 		command: 1,
 		embed: 1,
