@@ -75,7 +75,7 @@ var sanitized = htmlParser.sanitize(html, {
 	},
 	attributes: function(name, value) {
 		return /^on/i.test(name) || /^javascript:/i.test(value);
-	}
+	},
 	comments: true
 });
 
