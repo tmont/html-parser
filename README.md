@@ -1,6 +1,7 @@
 # html-parser
 
 [![Build Status](https://travis-ci.org/tmont/html-parser.png)](https://travis-ci.org/tmont/html-parser)
+[![NPM version](https://badge.fury.io/js/html-parser.png)](http://badge.fury.io/js/html-parser)
 
 Now with less explosions!
 
