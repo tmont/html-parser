@@ -1,6 +1,6 @@
 {
 	"name": "html-parser",
-	"version": "0.7.2",
+	"version": "0.7.3",
 	"description": "HTML/XML parser with less explosions",
 	"keywords": [ "html", "xml", "parser", "explosion" ],
 	"author": {
