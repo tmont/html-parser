@@ -26,8 +26,8 @@
 		"url": "git://github.com/tmont/html-parser.git"
 	},
 	"devDependencies": {
-		"mocha": "1.17.0",
-		"should": "2.1.1"
+		"mocha": "1.21.4",
+		"should": "4.0.4"
 	},
 
 	"scripts": {
