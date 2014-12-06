@@ -13,7 +13,8 @@
 
 	"contributors": [
 		{ "name": "jdponomarev" },
-		{ "name": "fiatjaf" }
+		{ "name": "fiatjaf" },
+		{ "name": "Sergii Kliuchnyk" }
 	],
 
 	"main": "./src/parser.js",
