@@ -102,8 +102,11 @@ console.log(sanitized);
  * @param {Function} [callbacks.cdata] Takes the content of the CDATA
  * @param {Function} [callbacks.xmlProlog] Takes no arguments
  * @param {Function} [callbacks.text] Takes the value of the text node
+ * @param {Object} [regex]
+ * @param {RegExp} [regex.name] Regex for element name. Default is [a-zA-Z_][\w:\-\.]*
+ * @param {RegExp} [regex.attribute] Regex for attribute name. Default is [a-zA-Z_][\w:\-\.]*
  */
-parse(htmlString, callbacks)
+parse(htmlString, callbacks, regex)
 
 /**
  * Parses the HTML contained in the given file asynchronously.

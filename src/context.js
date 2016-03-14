@@ -1,4 +1,4 @@
-exports.create = function(raw, options) {
+exports.create = function(raw, options, regex) {
 	var index = 0;
 	var context = {
 		text: '',
@@ -78,5 +78,16 @@ exports.create = function(raw, options) {
 		};
 	});
 
+	context.regex = {
+		name: /[a-zA-Z_][\w:\-\.]*/,
+		attribute: /[a-zA-Z_][\w:\-\.]*/
+	};
+	regex = regex || {};
+	for (var name in regex) {
+		if (regex.hasOwnProperty(name)) {
+			context.regex[name] = regex[name];
+		}
+	}
+
 	return context;
-}
+};

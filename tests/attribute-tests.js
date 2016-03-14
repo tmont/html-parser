@@ -172,4 +172,25 @@ describe('attributes', function() {
 		openCount.should.equal(1);
 		attrCount.should.equal(1);
 	});
+
+	it('with custom attribute regex', function() {
+		var openCount = 0, attrCount = 0;
+		helpers.parseString('<foo [bar]="baz">', {
+			openElement: function(name) {
+				name.should.equal('foo');
+				openCount++;
+			},
+
+			attribute: function(name, value) {
+				name.should.equal('[bar]');
+				value.should.equal('baz');
+				attrCount++;
+			}
+		}, {
+			attribute: /\[[\w\]]*/
+		});
+
+		openCount.should.equal(1);
+		attrCount.should.equal(1);
+	});
 });

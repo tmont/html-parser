@@ -1,8 +1,7 @@
 var parseContext = require('./context');
-var nameRegex = /[a-zA-Z_][\w:\-\.]*/;
 
 function readAttribute(context) {
-	var name = context.readRegex(nameRegex);
+	var name = context.readRegex(context.regex.attribute);
 	var value = null;
 	if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
 		context.readRegex(/\s*=\s*/);
@@ -30,7 +29,7 @@ function readAttributes(context, isXml) {
 
 	var next = context.current;
 	while (!context.isEof() && !isClosingToken()) {
-		if (nameRegex.test(next)) {
+		if (context.regex.attribute.test(next)) {
 			readAttribute(context);
 			next = context.current;
 		}
@@ -68,7 +67,7 @@ function readCloserForOpenedElement(context, name) {
 }
 
 function parseOpenElement(context) {
-	var name = context.readRegex(nameRegex);
+	var name = context.readRegex(context.regex.name);
 	context.callbacks.openElement(name);
 	readAttributes(context, false);
 	readCloserForOpenedElement(context, name);
@@ -90,7 +89,7 @@ function parseOpenElement(context) {
 }
 
 function parseEndElement(context) {
-	var name = context.readRegex(nameRegex);
+	var name = context.readRegex(context.regex.name);
 	context.callbacks.closeElement(name);
 	context.readRegex(/.*?(?:>|$)/);
 }
@@ -150,7 +149,7 @@ function parseNext(context) {
 		buffer += context.read();
 		if (context.current === '/') {
 			buffer += context.read();
-			if (nameRegex.test(context.current)) {
+			if (context.regex.name.test(context.current)) {
 				callbackText(context);
 				parseEndElement(context);
 			} else {
@@ -182,7 +181,7 @@ function parseNext(context) {
 				context.read();
 				appendText(buffer, context);
 			}
-		} else if (nameRegex.test(context.current)) {
+		} else if (context.regex.name.test(context.current)) {
 			callbackText(context);
 			parseOpenElement(context);
 		} else {
@@ -213,10 +212,13 @@ function parseNext(context) {
  * @param {Function} [callbacks.cdata] Takes the content of the CDATA
  * @param {Function} [callbacks.xmlProlog] Takes no arguments
  * @param {Function} [callbacks.text] Takes the value of the text node
+ * @param {Object} [regex]
+ * @param {RegExp} [regex.name] Regex for element name. Default is [a-zA-Z_][\w:\-\.]*
+ * @param {RegExp} [regex.attribute] Regex for attribute name. Default is [a-zA-Z_][\w:\-\.]*
  */
-exports.parse = function(htmlString, callbacks) {
+exports.parse = function(htmlString, callbacks, regex) {
 	htmlString = htmlString.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-	var context = parseContext.create(htmlString, callbacks);
+	var context = parseContext.create(htmlString, callbacks, regex);
 	do {
 		parseNext(context);
 	} while (!context.isEof());
