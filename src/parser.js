@@ -94,34 +94,22 @@ function parseEndElement(context) {
 	context.readRegex(/.*?(?:>|$)/);
 }
 
-function parseCData(context) {
-	//read "![CDATA["
-	context.read(8);
+function parseDataElement(context, dataElement) {
+	context.read(dataElement.start.length);
 
-	var match = /^([\s\S]*?)(?:$|]]>)/.exec(context.substring);
-	var value = match[1];
-	context.read(match[0].length);
-	context.callbacks.cdata(value);
-}
+	var substring = context.substring,
+		end = dataElement.end;
 
-function parseComment(context) {
-	//read "!--"
-	context.read(3);
+	if (dataElement.caseInsensitive) {
+		substring = substring.toLowerCase();
+		end = end.toLowerCase();
+	}
 
-	var match = /^([\s\S]*?)(?:$|-->)/.exec(context.substring);
-	var value = match[1];
-	context.read(match[0].length);
-	context.callbacks.comment(value);
-}
+	var index = substring.indexOf(end);
 
-function parseDocType(context) {
-	//read "!doctype"
-	context.read(8);
-
-	var match = /^\s*([\s\S]*?)(?:$|>)/.exec(context.substring);
-	var value = match[1];
-	context.read(match[0].length);
-	context.callbacks.docType(value);
+	var value = index > -1 ? context.substring.slice(0, index) : context.substring;
+	context.read(value.length + dataElement.end.length);
+	return value;
 }
 
 function parseXmlProlog(context) {
@@ -147,44 +135,41 @@ function parseNext(context) {
 	var current = context.current, buffer = current;
 	if (current == '<') {
 		buffer += context.read();
-		if (context.current === '/') {
-			buffer += context.read();
-			if (context.regex.name.test(context.current)) {
-				callbackText(context);
-				parseEndElement(context);
-			} else {
-				//malformed html
-				context.read();
-				appendText(buffer, context);
-			}
-		} else if (context.current === '!') {
-			if (/^!\[CDATA\[/.test(context.substring)) {
-				callbackText(context);
-				parseCData(context);
-			} else if (/^!--/.test(context.substring)) {
-				callbackText(context);
-				parseComment(context);
-			} else if (/^!doctype/i.test(context.substring)) {
-				callbackText(context);
-				parseDocType(context);
-			} else {
-				//malformed html
-				context.read();
-				appendText(buffer, context);
-			}
-		} else if (context.current === '?') {
-			if (/^\?xml/.test(context.substring)) {
+		block: {
+			if (context.current === '/') {
+				buffer += context.read();
+				if (context.regex.name.test(context.current)) {
+					callbackText(context);
+					parseEndElement(context);
+					break block;
+				}
+			} else if (context.current === '?' && /^\?xml/.test(context.substring)) {
 				callbackText(context);
 				parseXmlProlog(context);
+				break block;
+			} else if (context.regex.name.test(context.current)) {
+				callbackText(context);
+				parseOpenElement(context);
+				break block;
 			} else {
-				//malformed xml prolog
-				context.read();
-				appendText(buffer, context);
+				for (var callbackName in context.regex.dataElements) {
+					var dataElement = context.regex.dataElements[callbackName],
+						start = dataElement.start,
+						contextStart = context.substring.slice(0, start.length);
+
+					if (dataElement.caseInsensitive) {
+						start = start.toLowerCase();
+						contextStart = contextStart.toLowerCase();
+					}
+
+					if (start === contextStart) {
+						callbackText(context);
+						context.callbacks[callbackName](parseDataElement(context, dataElement));
+						break block;
+					}
+				}
 			}
-		} else if (context.regex.name.test(context.current)) {
-			callbackText(context);
-			parseOpenElement(context);
-		} else {
+
 			//malformed html
 			context.read();
 			appendText(buffer, context);

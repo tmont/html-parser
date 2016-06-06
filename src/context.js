@@ -1,4 +1,4 @@
-exports.create = function(raw, options, regex) {
+exports.create = function(raw, callbacks, regex) {
 	var index = 0,
 		substring = null;
 
@@ -80,17 +80,40 @@ exports.create = function(raw, options, regex) {
 	context.callbacks = {};
 	var types = [ 'openElement', 'closeElement', 'attribute', 'comment', 'cdata', 'text', 'docType', 'xmlProlog', 'closeOpenedElement' ];
 	types.forEach(function(value) {
-		context.callbacks[value] = options[value] || function() {
-		};
+		context.callbacks[value] = function() {};
 	});
+
+	callbacks = callbacks || {};
+	for (var name in callbacks) {
+		context.callbacks[name] = callbacks[name];
+	}
 
 	context.regex = {
 		name: /[a-zA-Z_][\w:\-\.]*/,
-		attribute: /[a-zA-Z_][\w:\-\.]*/
+		attribute: /[a-zA-Z_][\w:\-\.]*/,
+		dataElements: {
+			cdata: {
+				start: '![CDATA[',
+				end: ']]>'
+			},
+			comment: {
+				start: '!--',
+				end: '-->'
+			},
+			docType: {
+				start: '!DOCTYPE ',
+				end: '>',
+				caseInsensitive: true
+			}
+		}
 	};
+
 	regex = regex || {};
 	for (var name in regex) {
-		if (regex.hasOwnProperty(name)) {
+		if (name === 'dataElements') {
+			Object.assign(context.regex.dataElements, regex.dataElements);
+		}
+		else {
 			context.regex[name] = regex[name];
 		}
 	}
