@@ -1,10 +1,12 @@
-exports.create = function(raw, options, regex) {
-	var index = 0;
+exports.create = function(raw, callbacks, regex) {
+	var index = 0,
+		substring = null;
+
 	var context = {
 		text: '',
 		peek: function(count) {
 			count = count || 1;
-			return this.raw.substr(index + 1, count);
+			return this.raw.substr(this.index + 1, count);
 		},
 		read: function(count) {
 			if (count === 0) {
@@ -12,9 +14,9 @@ exports.create = function(raw, options, regex) {
 			}
 			count = count || 1;
 			var next = this.peek(count);
-			index += count;
-			if (index > this.length) {
-				index = this.length;
+			this.index += count;
+			if (this.index > this.length) {
+				this.index = this.length;
 			}
 			return next;
 		},
@@ -31,11 +33,11 @@ exports.create = function(raw, options, regex) {
 			return value;
 		},
 		isEof: function() {
-			return index >= this.length;
+			return this.index >= this.length;
 		},
 		readRegex: function(regex) {
 			var value = (regex.exec(this.raw.substring(this.index)) || [''])[0];
-			index += value.length;
+			this.index += value.length;
 			return value;
 		},
 		peekIgnoreWhitespace: function(count) {
@@ -67,24 +69,51 @@ exports.create = function(raw, options, regex) {
 	context.__defineGetter__('index', function() {
 		return index;
 	});
+	context.__defineSetter__('index', function(value) {
+		index = value;
+		substring = null;
+	});
 	context.__defineGetter__('substring', function() {
-		return this.raw.substring(this.index);
+		return substring === null ? (substring = this.raw.substring(this.index)) : substring;
 	});
 
 	context.callbacks = {};
 	var types = [ 'openElement', 'closeElement', 'attribute', 'comment', 'cdata', 'text', 'docType', 'xmlProlog', 'closeOpenedElement' ];
 	types.forEach(function(value) {
-		context.callbacks[value] = options[value] || function() {
-		};
+		context.callbacks[value] = function() {};
 	});
+
+	callbacks = callbacks || {};
+	for (var name in callbacks) {
+		context.callbacks[name] = callbacks[name];
+	}
 
 	context.regex = {
 		name: /[a-zA-Z_][\w:\-\.]*/,
-		attribute: /[a-zA-Z_][\w:\-\.]*/
+		attribute: /[a-zA-Z_][\w:\-\.]*/,
+		dataElements: {
+			cdata: {
+				start: '![CDATA[',
+				end: ']]>'
+			},
+			comment: {
+				start: '!--',
+				end: '-->'
+			},
+			docType: {
+				start: '!DOCTYPE ',
+				end: '>',
+				caseInsensitive: true
+			}
+		}
 	};
+
 	regex = regex || {};
 	for (var name in regex) {
-		if (regex.hasOwnProperty(name)) {
+		if (name === 'dataElements') {
+			Object.assign(context.regex.dataElements, regex.dataElements);
+		}
+		else {
 			context.regex[name] = regex[name];
 		}
 	}
