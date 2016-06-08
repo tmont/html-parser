@@ -1,5 +1,6 @@
 exports.create = function(raw, callbacks, regex) {
 	var index = 0,
+		current = null,
 		substring = null;
 
 	var context = {
@@ -58,7 +59,7 @@ exports.create = function(raw, callbacks, regex) {
 	};
 
 	context.__defineGetter__('current', function() {
-		return this.isEof() ? '' : this.raw.charAt(this.index);
+		return this.isEof() ? '' : current === null ? (current = this.raw.charAt(this.index)) : current;
 	});
 	context.__defineGetter__('raw', function() {
 		return raw;
@@ -71,6 +72,7 @@ exports.create = function(raw, callbacks, regex) {
 	});
 	context.__defineSetter__('index', function(value) {
 		index = value;
+		current = null;
 		substring = null;
 	});
 	context.__defineGetter__('substring', function() {
@@ -83,40 +85,42 @@ exports.create = function(raw, callbacks, regex) {
 		context.callbacks[value] = function() {};
 	});
 
-	callbacks = callbacks || {};
-	for (var name in callbacks) {
-		context.callbacks[name] = callbacks[name];
-	}
+	merge(context.callbacks, callbacks || {});
 
 	context.regex = {
 		name: /[a-zA-Z_][\w:\-\.]*/,
 		attribute: /[a-zA-Z_][\w:\-\.]*/,
 		dataElements: {
 			cdata: {
-				start: '![CDATA[',
+				start: '<![CDATA[',
 				end: ']]>'
 			},
 			comment: {
-				start: '!--',
+				start: '<!--',
 				end: '-->'
 			},
 			docType: {
-				start: '!DOCTYPE ',
-				end: '>',
-				caseInsensitive: true
+				start: /^<!DOCTYPE /i,
+				end: '>'
 			}
 		}
 	};
 
-	regex = regex || {};
-	for (var name in regex) {
-		if (name === 'dataElements') {
-			Object.assign(context.regex.dataElements, regex.dataElements);
-		}
-		else {
-			context.regex[name] = regex[name];
-		}
-	}
+	merge(context.regex, regex || {});
 
 	return context;
 };
+
+function merge(target, source) {
+    for (var name in source) {
+		if (!source.hasOwnProperty(name)) continue;
+
+		var value = source[name];
+
+		if (target[name] && typeof value === 'object' && value instanceof RegExp === false) {
+			merge(target[name], value);
+		} else {
+			target[name] = value;
+		}
+	}
+}

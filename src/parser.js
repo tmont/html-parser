@@ -95,21 +95,71 @@ function parseEndElement(context) {
 }
 
 function parseDataElement(context, dataElement) {
-	context.read(dataElement.start.length);
-
-	var substring = context.substring,
+	var start = dataElement.start,
+		data = dataElement.data,
 		end = dataElement.end;
 
-	if (dataElement.caseInsensitive) {
-		substring = substring.toLowerCase();
-		end = end.toLowerCase();
+	switch (typeof start) {
+		case 'string':
+			start = start.length;
+			break;
+		case 'object':
+			start = start.exec(context.substring);
+			start = start[start.length - 1].length;
+			break;
+		case 'function':
+			start = start(context.substring);
+			break;
 	}
 
-	var index = substring.indexOf(end);
+	context.read(start);
 
-	var value = index > -1 ? context.substring.slice(0, index) : context.substring;
-	context.read(value.length + dataElement.end.length);
-	return value;
+	switch (typeof data) {
+		case 'object':
+			data = data.exec(context.substring);
+			data = data[data.length - 1];
+			break;
+		case 'function':
+			data = data(context.substring);
+			break;
+		case 'undefined':
+			var index = -1;
+			
+			switch (typeof end) {
+				case 'string':
+					index = context.substring.indexOf(end);
+					break;
+				case 'object':
+					var match = context.substring.match(end);
+					if (match) {
+						match = match[match.length - 1];
+						index = context.substring.indexOf(match);
+					}
+					break;
+			}
+			
+			data = index > -1 ? context.substring.slice(0, index) : context.substring;
+			break;
+	}
+
+	context.read(data.length);
+
+	switch (typeof end) {
+		case 'string':
+			end = end.length;
+			break;
+		case 'object':
+			end = end.exec(context.substring);
+			end = end[end.length - 1].length;
+			break;
+		case 'function':
+			end = end(context.substring);
+			break;
+	}
+
+	context.read(end);
+
+	return data;
 }
 
 function parseXmlProlog(context) {
@@ -132,52 +182,54 @@ function callbackText(context) {
 }
 
 function parseNext(context) {
-	var current = context.current, buffer = current;
-	if (current == '<') {
-		buffer += context.read();
-		block: {
-			if (context.current === '/') {
-				buffer += context.read();
-				if (context.regex.name.test(context.current)) {
-					callbackText(context);
-					parseEndElement(context);
-					break block;
-				}
-			} else if (context.current === '?' && /^\?xml/.test(context.substring)) {
-				callbackText(context);
-				parseXmlProlog(context);
-				break block;
-			} else if (context.regex.name.test(context.current)) {
-				callbackText(context);
-				parseOpenElement(context);
-				break block;
-			} else {
-				for (var callbackName in context.regex.dataElements) {
-					var dataElement = context.regex.dataElements[callbackName],
-						start = dataElement.start,
-						contextStart = context.substring.slice(0, start.length);
-
-					if (dataElement.caseInsensitive) {
-						start = start.toLowerCase();
-						contextStart = contextStart.toLowerCase();
-					}
-
-					if (start === contextStart) {
-						callbackText(context);
-						context.callbacks[callbackName](parseDataElement(context, dataElement));
-						break block;
-					}
-				}
-			}
-
-			//malformed html
-			context.read();
-			appendText(buffer, context);
+	if (context.current === '<') {
+		var next = context.substring.charAt(1);
+		if (next === '/' && context.regex.name.test(context.substring.charAt(2))) {
+			context.read(2);
+			callbackText(context);
+			parseEndElement(context);
+			return;
+		} else if (next === '?' && /^<\?xml/.test(context.substring)) {
+			context.read(1);
+			callbackText(context);
+			parseXmlProlog(context);
+			return;
+		} else if (context.regex.name.test(next)) {
+			context.read(1);
+			callbackText(context);
+			parseOpenElement(context);
+			return;
 		}
-	} else {
-		appendText(context.current, context);
-		context.read();
 	}
+
+	for (var callbackName in context.regex.dataElements) {
+		if (!context.regex.dataElements.hasOwnProperty(callbackName)) continue;
+		
+		var dataElement = context.regex.dataElements[callbackName],
+			start = dataElement.start,
+			isValid = false;
+
+		switch (typeof start) {
+			case 'string':
+				isValid = context.substring.slice(0, start.length) === start;
+				break;
+			case 'object':
+				isValid = start.test(context.substring);
+				break;
+			case 'function':
+				isValid = start(context.substring) > -1;
+				break;
+		}
+
+		if (isValid) {
+			callbackText(context);
+			context.callbacks[callbackName](parseDataElement(context, dataElement));
+			return;
+		}
+	}
+
+	appendText(context.current, context);
+	context.read();
 }
 
 /**
@@ -200,6 +252,7 @@ function parseNext(context) {
  * @param {Object} [regex]
  * @param {RegExp} [regex.name] Regex for element name. Default is [a-zA-Z_][\w:\-\.]*
  * @param {RegExp} [regex.attribute] Regex for attribute name. Default is [a-zA-Z_][\w:\-\.]*
+ * @param {Object.<string,DataElementConfig>} [regex.dataElements] Config of data elements like docType, comment and your own custom data elements
  */
 exports.parse = function(htmlString, callbacks, regex) {
 	htmlString = htmlString.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -210,6 +263,13 @@ exports.parse = function(htmlString, callbacks, regex) {
 
 	callbackText(context);
 };
+
+/**
+ * @typedef {Object} DataElementConfig
+ * @property {String|RegExp|Function} start - start of data element, for example '<%' or /^<\?=/ or function(string){return string.slice(0, 2) === '<%' ? 2 : -1;}
+ * @property {RegExp|Function} data - content of data element, for example /^[^\s]+/ or function(string){return string.match(/^[^\s]+/)[0];}
+ * @property {String|RegExp|Function} end - end of data element, for example '%>' or /^\?>/ or function(string){return 2;}
+ */
 
 /**
  * Parses the HTML contained in the given file asynchronously.
