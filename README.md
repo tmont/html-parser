@@ -84,6 +84,40 @@ console.log(sanitized);
 //<p>blah blah</p>
 ```
 
+### Custom data elements
+You can parser custom data elements like php code or underscore templates with `regex.dataElements` config
+```javascript
+helpers.parseString('<div><?= "<div>$var</div>" ?></div>', {
+    openElement: function(name) {
+        console.log(name); // 'div'
+    },
+    closeElement: function(name) {
+        console.log(name); // 'div'
+    },
+    phpEcho: function(value) {
+        console.log(value); // {length: 61, someProperty: ' "<div>$var</div>" '}
+    }
+}, {
+    dataElements: {
+        phpEcho: {
+            start: '<?=',
+            data: function (string) {
+                var index = string.indexOf('?>'),
+                    code = string.slice(0, index);
+
+                return code;
+                // or
+                return {
+                    length: code.length, // required field
+                    someProperty: code
+                };
+            },
+            end: '?>'
+        }
+    }
+});
+```
+
 ## API
 ```javascript
 /**
@@ -105,8 +139,16 @@ console.log(sanitized);
  * @param {Object} [regex]
  * @param {RegExp} [regex.name] Regex for element name. Default is [a-zA-Z_][\w:\-\.]*
  * @param {RegExp} [regex.attribute] Regex for attribute name. Default is [a-zA-Z_][\w:\-\.]*
+ * @param {Object.<callbackName,DataElementConfig>} [regex.dataElements] Config of data elements like docType, comment and your own custom data elements
  */
 parse(htmlString, callbacks, regex)
+
+/**
+ * @typedef {Object} DataElementConfig
+ * @property {String|RegExp|Function} start - start of data element, for example '<%' or /^<\?=/ or function(string){return string.slice(0, 2) === '<%' ? 2 : -1;}
+ * @property {RegExp|Function} data - content of data element, for example /^[^\s]+/ or function(string){return string.match(/^[^\s]+/)[0];}
+ * @property {String|RegExp|Function} end - end of data element, for example '%>' or /^\?>/ or function(string){return 2;}
+ */
 
 /**
  * Parses the HTML contained in the given file asynchronously.

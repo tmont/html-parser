@@ -1,5 +1,6 @@
-exports.create = function(raw, options, regex) {
+exports.create = function(raw, callbacks, regex) {
 	var index = 0,
+		current = null,
 		substring = null;
 
 	var context = {
@@ -58,7 +59,7 @@ exports.create = function(raw, options, regex) {
 	};
 
 	context.__defineGetter__('current', function() {
-		return this.isEof() ? '' : this.raw.charAt(this.index);
+		return this.isEof() ? '' : current === null ? (current = this.raw.charAt(this.index)) : current;
 	});
 	context.__defineGetter__('raw', function() {
 		return raw;
@@ -71,6 +72,7 @@ exports.create = function(raw, options, regex) {
 	});
 	context.__defineSetter__('index', function(value) {
 		index = value;
+		current = null;
 		substring = null;
 	});
 	context.__defineGetter__('substring', function() {
@@ -80,20 +82,45 @@ exports.create = function(raw, options, regex) {
 	context.callbacks = {};
 	var types = [ 'openElement', 'closeElement', 'attribute', 'comment', 'cdata', 'text', 'docType', 'xmlProlog', 'closeOpenedElement' ];
 	types.forEach(function(value) {
-		context.callbacks[value] = options[value] || function() {
-		};
+		context.callbacks[value] = function() {};
 	});
+
+	merge(context.callbacks, callbacks || {});
 
 	context.regex = {
 		name: /[a-zA-Z_][\w:\-\.]*/,
-		attribute: /[a-zA-Z_][\w:\-\.]*/
-	};
-	regex = regex || {};
-	for (var name in regex) {
-		if (regex.hasOwnProperty(name)) {
-			context.regex[name] = regex[name];
+		attribute: /[a-zA-Z_][\w:\-\.]*/,
+		dataElements: {
+			cdata: {
+				start: '<![CDATA[',
+				end: ']]>'
+			},
+			comment: {
+				start: '<!--',
+				end: '-->'
+			},
+			docType: {
+				start: /^<!DOCTYPE /i,
+				end: '>'
+			}
 		}
-	}
+	};
+
+	merge(context.regex, regex || {});
 
 	return context;
 };
+
+function merge(target, source) {
+    for (var name in source) {
+		if (!source.hasOwnProperty(name)) continue;
+
+		var value = source[name];
+
+		if (target[name] && typeof value === 'object' && value instanceof RegExp === false) {
+			merge(target[name], value);
+		} else {
+			target[name] = value;
+		}
+	}
+}

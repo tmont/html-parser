@@ -94,34 +94,72 @@ function parseEndElement(context) {
 	context.readRegex(/.*?(?:>|$)/);
 }
 
-function parseCData(context) {
-	//read "![CDATA["
-	context.read(8);
+function parseDataElement(context, dataElement) {
+	var start = dataElement.start,
+		data = dataElement.data,
+		end = dataElement.end;
 
-	var match = /^([\s\S]*?)(?:$|]]>)/.exec(context.substring);
-	var value = match[1];
-	context.read(match[0].length);
-	context.callbacks.cdata(value);
-}
+	switch (typeof start) {
+		case 'string':
+			start = start.length;
+			break;
+		case 'object':
+			start = start.exec(context.substring);
+			start = start[start.length - 1].length;
+			break;
+		case 'function':
+			start = start(context.substring);
+			break;
+	}
 
-function parseComment(context) {
-	//read "!--"
-	context.read(3);
+	context.read(start);
 
-	var match = /^([\s\S]*?)(?:$|-->)/.exec(context.substring);
-	var value = match[1];
-	context.read(match[0].length);
-	context.callbacks.comment(value);
-}
+	switch (typeof data) {
+		case 'object':
+			data = data.exec(context.substring);
+			data = data[data.length - 1];
+			break;
+		case 'function':
+			data = data(context.substring);
+			break;
+		case 'undefined':
+			var index = -1;
 
-function parseDocType(context) {
-	//read "!doctype"
-	context.read(8);
+			switch (typeof end) {
+				case 'string':
+					index = context.substring.indexOf(end);
+					break;
+				case 'object':
+					var match = context.substring.match(end);
+					if (match) {
+						match = match[match.length - 1];
+						index = context.substring.indexOf(match);
+					}
+					break;
+			}
 
-	var match = /^\s*([\s\S]*?)(?:$|>)/.exec(context.substring);
-	var value = match[1];
-	context.read(match[0].length);
-	context.callbacks.docType(value);
+			data = index > -1 ? context.substring.slice(0, index) : context.substring;
+			break;
+	}
+
+	context.read(data.length);
+
+	switch (typeof end) {
+		case 'string':
+			end = end.length;
+			break;
+		case 'object':
+			end = end.exec(context.substring);
+			end = end[end.length - 1].length;
+			break;
+		case 'function':
+			end = end(context.substring);
+			break;
+	}
+
+	context.read(end);
+
+	return data;
 }
 
 function parseXmlProlog(context) {
@@ -144,55 +182,56 @@ function callbackText(context) {
 }
 
 function parseNext(context) {
-	var current = context.current, buffer = current;
-	if (current == '<') {
-		buffer += context.read();
-		if (context.current === '/') {
-			buffer += context.read();
-			if (context.regex.name.test(context.current)) {
-				callbackText(context);
-				parseEndElement(context);
-			} else {
-				//malformed html
-				context.read();
-				appendText(buffer, context);
-			}
-		} else if (context.current === '!') {
-			if (/^!\[CDATA\[/.test(context.substring)) {
-				callbackText(context);
-				parseCData(context);
-			} else if (/^!--/.test(context.substring)) {
-				callbackText(context);
-				parseComment(context);
-			} else if (/^!doctype/i.test(context.substring)) {
-				callbackText(context);
-				parseDocType(context);
-			} else {
-				//malformed html
-				context.read();
-				appendText(buffer, context);
-			}
-		} else if (context.current === '?') {
-			if (/^\?xml/.test(context.substring)) {
-				callbackText(context);
-				parseXmlProlog(context);
-			} else {
-				//malformed xml prolog
-				context.read();
-				appendText(buffer, context);
-			}
-		} else if (context.regex.name.test(context.current)) {
+	if (context.current === '<') {
+		var next = context.substring.charAt(1);
+		if (next === '/' && context.regex.name.test(context.substring.charAt(2))) {
+			context.read(2);
+			callbackText(context);
+			parseEndElement(context);
+			return;
+		} else if (next === '?' && /^<\?xml/.test(context.substring)) {
+			context.read(1);
+			callbackText(context);
+			parseXmlProlog(context);
+			return;
+		} else if (context.regex.name.test(next)) {
+			context.read(1);
 			callbackText(context);
 			parseOpenElement(context);
-		} else {
-			//malformed html
-			context.read();
-			appendText(buffer, context);
+			return;
 		}
-	} else {
-		appendText(context.current, context);
-		context.read();
 	}
+
+	for (var callbackName in context.regex.dataElements) {
+		if (!context.regex.dataElements.hasOwnProperty(callbackName)) {
+			continue;
+		}
+
+		var dataElement = context.regex.dataElements[callbackName],
+			start = dataElement.start,
+			isValid = false;
+
+		switch (typeof start) {
+			case 'string':
+				isValid = context.substring.slice(0, start.length) === start;
+				break;
+			case 'object':
+				isValid = start.test(context.substring);
+				break;
+			case 'function':
+				isValid = start(context.substring) > -1;
+				break;
+		}
+
+		if (isValid) {
+			callbackText(context);
+			context.callbacks[callbackName](parseDataElement(context, dataElement));
+			return;
+		}
+	}
+
+	appendText(context.current, context);
+	context.read();
 }
 
 /**
@@ -215,6 +254,7 @@ function parseNext(context) {
  * @param {Object} [regex]
  * @param {RegExp} [regex.name] Regex for element name. Default is [a-zA-Z_][\w:\-\.]*
  * @param {RegExp} [regex.attribute] Regex for attribute name. Default is [a-zA-Z_][\w:\-\.]*
+ * @param {Object.<string,DataElementConfig>} [regex.dataElements] Config of data elements like docType, comment and your own custom data elements
  */
 exports.parse = function(htmlString, callbacks, regex) {
 	htmlString = htmlString.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -225,6 +265,13 @@ exports.parse = function(htmlString, callbacks, regex) {
 
 	callbackText(context);
 };
+
+/**
+ * @typedef {Object} DataElementConfig
+ * @property {String|RegExp|Function} start - start of data element, for example '<%' or /^<\?=/ or function(string){return string.slice(0, 2) === '<%' ? 2 : -1;}
+ * @property {RegExp|Function} data - content of data element, for example /^[^\s]+/ or function(string){return string.match(/^[^\s]+/)[0];}
+ * @property {String|RegExp|Function} end - end of data element, for example '%>' or /^\?>/ or function(string){return 2;}
+ */
 
 /**
  * Parses the HTML contained in the given file asynchronously.
