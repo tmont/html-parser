@@ -1,4 +1,5 @@
 var parseContext = require('./context');
+var fs = require('fs');
 
 function readAttribute(context) {
 	var name = context.readRegex(context.regex.attribute);
@@ -285,7 +286,6 @@ exports.parse = function(htmlString, callbacks, regex) {
  * @param {Function} [callback]
  */
 exports.parseFile = function(fileName, encoding, callbacks, callback) {
-	var fs = require('fs');
 	fs.readFile(fileName, encoding || 'utf8', function(err, contents) {
 		if (err) {
 			callback && callback(err);
