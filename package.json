@@ -18,20 +18,19 @@
 	],
 
 	"main": "./src/parser.js",
-	"directories": {
-		"lib": "./src"
-	},
+
+	"files": [ "src" ],
 
 	"repository": {
 		"type": "git",
 		"url": "git://github.com/tmont/html-parser.git"
 	},
 	"devDependencies": {
-		"mocha": "2.4.5",
-		"should": "8.2.2"
+		"mocha": "2.5.3",
+		"should": "9.0.1"
 	},
 
 	"scripts": {
-		"test": "node_modules/.bin/mocha -R spec ./tests"
+		"test": "node_modules/.bin/mocha -R dot ./tests"
 	}
 }
