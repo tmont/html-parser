@@ -1,6 +1,6 @@
 {
 	"name": "html-parser",
-	"version": "0.10.1",
+	"version": "0.11.0",
 	"description": "HTML/XML parser with less explosions",
 	"keywords": [ "html", "xml", "parser", "explosion" ],
 	"author": {
@@ -14,7 +14,8 @@
 	"contributors": [
 		{ "name": "jdponomarev" },
 		{ "name": "fiatjaf" },
-		{ "name": "Sergii Kliuchnyk" }
+		{ "name": "Sergii Kliuchnyk" },
+		{ "name": "Edwin Hoogerbeets" }
 	],
 
 	"main": "./src/parser.js",
