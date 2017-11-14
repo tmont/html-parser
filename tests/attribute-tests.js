@@ -29,9 +29,10 @@ describe('attributes', function() {
 				openCount++;
 			},
 
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				name.should.equal('bar');
 				value.should.equal('baz');
+				quote.should.equal('"');
 				attrCount++;
 			}
 		});
@@ -48,9 +49,10 @@ describe('attributes', function() {
 				openCount++;
 			},
 
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				name.should.equal('bar');
 				value.should.equal('baz');
+				quote.should.equal("'");
 				attrCount++;
 			}
 		});
@@ -105,9 +107,10 @@ describe('attributes', function() {
 				openCount++;
 			},
 
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				name.should.equal(attrCount === 0 ? 'width' : 'height');
 				value.should.equal(attrCount === 0 ? '0' : '12');
+				quote.should.equal('"');
 				attrCount++;
 			}
 		});
@@ -124,9 +127,10 @@ describe('attributes', function() {
 				openCount++;
 			},
 
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				name.should.equal('bar');
 				value.should.equal('baz');
+				quote.should.equal('"');
 				attrCount++;
 			}
 		});
@@ -143,9 +147,10 @@ describe('attributes', function() {
 				openCount++;
 			},
 
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				name.should.equal('bar');
 				value.should.equal('baz');
+				quote.should.equal('"');
 				attrCount++;
 			}
 		});
@@ -162,9 +167,10 @@ describe('attributes', function() {
 				openCount++;
 			},
 
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				name.should.equal('bar:baz');
 				value.should.equal('bat');
+				quote.should.equal('"');
 				attrCount++;
 			}
 		});
@@ -181,9 +187,10 @@ describe('attributes', function() {
 				openCount++;
 			},
 
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				name.should.equal('[bar]');
 				value.should.equal('baz');
+				quote.should.equal('"');
 				attrCount++;
 			}
 		}, {

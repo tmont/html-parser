@@ -3,13 +3,14 @@ var fs = require('fs');
 
 function readAttribute(context) {
 	var name = context.readRegex(context.regex.attribute);
-	var value = null;
+	var value = null, quote = '"';
 	if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
 		context.readRegex(/\s*=\s*/);
 		var attributeValueRegex;
 		switch (context.current) {
 		case "'":
 			attributeValueRegex = /('(\\'|<%.*?%>|[^'])*?')/;
+			quote = "'";
 			break;
 		case '"':
 			attributeValueRegex = /("(\\"|<%.*?%>|[^"])*?")/;
@@ -27,9 +28,17 @@ function readAttribute(context) {
 		var match = attributeValueRegex.exec(context.substring) || [0, ''];
 		value = match[1];
 		context.read(match[0].length);
+
+		if (value[0] === '"' || value[0] === "'") {
+			value = value.substring(1);
+		}
+
+		if (value[value.length-1] === '"' || value[value.length-1] === "'") {
+			value = value.substring(0, value.length-1);
+		}
 	}
 
-	context.callbacks.attribute(name, value);
+	context.callbacks.attribute(name, value, quote);
 }
 
 function readAttributes(context, isXml) {
@@ -481,7 +490,7 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 			sanitized += '</' + name + '>';
 		},
 
-		attribute: function(name, value) {
+		attribute: function(name, value, quote) {
 			if (ignoreStack.length) {
 				return;
 			}
@@ -493,7 +502,8 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 
 			sanitized += ' ' + name;
 			if (value) {
-				sanitized += '="' + value.replace(/"/g, '&quot;') + '"';
+				// reuse the existing quote style if possible
+				sanitized += '=' + quote + ((quote === '"') ? value.replace(/"/g, '&quot;') : value.replace(/'/g, '&apos;')) + quote;
 			}
 		},
 
