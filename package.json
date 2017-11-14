@@ -14,7 +14,8 @@
 	"contributors": [
 		{ "name": "jdponomarev" },
 		{ "name": "fiatjaf" },
-		{ "name": "Sergii Kliuchnyk" }
+		{ "name": "Sergii Kliuchnyk" },
+		{ "name": "Edwin Hoogerbeets" }
 	],
 
 	"main": "./src/parser.js",

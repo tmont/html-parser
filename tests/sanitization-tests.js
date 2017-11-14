@@ -160,7 +160,7 @@ describe('Sanitization', function() {
 	it('should sanitize based on attribute value', function() {
 		var html = '<foo id="abc"></foo><foo id="def"></foo>';
 		var sanitized = helpers.parser.sanitize(html, {
-			attributes: function(name, value) {
+			attributes: function(name, value, quote) {
 				return value === 'abc';
 			}
 		});

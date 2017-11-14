@@ -8,7 +8,7 @@ describe('XML Prologs', function() {
 			xmlProlog: function() {
 				prologCount++;
 			},
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				name.should.equal('version');
 				value.should.equal('1.0');
 				attributeCount++;
@@ -64,7 +64,7 @@ describe('XML Prologs', function() {
 				name.should.equal('foo');
 				closeCount++;
 			},
-			attribute: function(name, value) {
+			attribute: function(name, value, quote) {
 				openCount.should.equal(1);
 				closeCount.should.equal(0);
 				name.should.equal('version');
