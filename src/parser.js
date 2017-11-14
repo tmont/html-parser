@@ -6,10 +6,23 @@ function readAttribute(context) {
 	var value = null;
 	if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
 		context.readRegex(/\s*=\s*/);
-		var quote = /['"]/.test(context.current) ? context.current : '';
-		var attributeValueRegex = !quote
-			? /(.*?)(?=[\s>])/
-			: new RegExp(quote + '(.*?)' + quote);
+		var attributeValueRegex;
+		switch (context.current) {
+		case "'":
+			attributeValueRegex = /('(\\'|<%.*?%>|[^'])*?')/;
+			break;
+		case '"':
+			attributeValueRegex = /("(\\"|<%.*?%>|[^"])*?")/;
+			break;
+		case '<':
+			attributeValueRegex = (context.peek() === '%') ? 
+				/(<%.*?%>)/ :
+				/(.*?)(?=[\s><])/;
+			break;
+		default:
+			attributeValueRegex = /(.*?)(?=[\s><])/;
+			break;
+		} 
 
 		var match = attributeValueRegex.exec(context.substring) || [0, ''];
 		value = match[1];
@@ -28,14 +41,50 @@ function readAttributes(context, isXml) {
 		return context.current === '>' || (context.current === '/' && context.peekIgnoreWhitespace() === '>');
 	}
 
-	var next = context.current;
+	var next = context.current, handled;
 	while (!context.isEof() && !isClosingToken()) {
-		if (context.regex.attribute.test(next)) {
-			readAttribute(context);
-			next = context.current;
+		handled = false;
+		if (context.current === '<') {
+			for (var callbackName in context.regex.dataElements) {
+				if (!context.regex.dataElements.hasOwnProperty(callbackName)) {
+					continue;
+				}
+
+				var dataElement = context.regex.dataElements[callbackName],
+					start = dataElement.start,
+					isValid = false;
+
+				switch (typeof start) {
+					case 'string':
+						isValid = context.substring.slice(0, start.length) === start;
+						break;
+					case 'object':
+						isValid = start.test(context.substring);
+						break;
+					case 'function':
+						isValid = start(context.substring) > -1;
+						break;
+				}
+
+				if (isValid) {
+					callbackText(context);
+					context.callbacks[callbackName](parseDataElement(context, dataElement));
+					next = context.current;
+					handled = true;
+					break;
+				} 
+				next = context.current;
+			}
 		}
-		else {
-			next = context.read();
+		
+		if (!handled) {
+			if (context.regex.attribute.test(next)) {
+				readAttribute(context);
+				next = context.current;
+			}
+			else {
+				next = context.read();
+			}
 		}
 	}
 }
@@ -73,7 +122,7 @@ function parseOpenElement(context) {
 	readAttributes(context, false);
 	readCloserForOpenedElement(context, name);
 
-	if (!/^(script|xmp)$/i.test(name)) {
+	if (!/^(script|xmp|style)$/i.test(name)) {
 		return;
 	}
 
@@ -468,7 +517,7 @@ exports.sanitize = function(htmlString, removalCallbacks) {
 			}
 
 			for (var i = tagStack.length - 1; i >= 0; i--) {
-				if (tagStack[i] === 'script' || tagStack[i] === 'xmp') {
+				if (tagStack[i] === 'script' || tagStack[i] === 'xmp' || tagStack[i] === 'style') {
 					sanitized += value;
 					return;
 				}
