@@ -3,7 +3,7 @@ var fs = require('fs');
 
 function readAttribute(context) {
 	var name = context.readRegex(context.regex.attribute);
-	var value = null, quote = '"';
+	var value = null, quote = '';
 	if (context.current === '=' || context.peekIgnoreWhitespace() === '=') {
 		context.readRegex(/\s*=\s*/);
 		var attributeValueRegex;
@@ -14,6 +14,7 @@ function readAttribute(context) {
 			break;
 		case '"':
 			attributeValueRegex = /("(\\"|<%.*?%>|[^"])*?")/;
+			quote = '"';
 			break;
 		case '<':
 			attributeValueRegex = (context.peek() === '%') ? 

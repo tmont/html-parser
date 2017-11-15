@@ -110,7 +110,7 @@ describe('attributes', function() {
 			attribute: function(name, value, quote) {
 				name.should.equal(attrCount === 0 ? 'width' : 'height');
 				value.should.equal(attrCount === 0 ? '0' : '12');
-				quote.should.equal('"');
+				quote.should.equal(attrCount === 0 ? '' : '"');
 				attrCount++;
 			}
 		});
