@@ -8,7 +8,7 @@ Now with less explosions!
 The purpose of this library is not to be the best XML parsing library ever
 conceived. Because it's not. It's meant to be an HTML/XML parser that doesn't
 require valid HTML/XML. It's also meant to act as a sanitizer, which is the
-main reason for it's existence.
+main reason for its existence.
 
 For example, you can just shove a blob of text into it, and it will happily
 parse as if it were valid XML.
